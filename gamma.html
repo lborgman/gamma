@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Gamma (40hz) light and sound stimulation">
+
+    <title>Gamma (4hz) stimulation</title>
+    <style>
+        #sound-off {
+            display: none;
+        }
+
+        .sound-is-on #sound-off {
+            display: unset;
+        }
+
+        #sound-on {
+            display: unset;
+        }
+
+        .sound-is-on #sound-on {
+            display: none;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <h1>Gamma (40hz) stimulation</h1>
+
+    <button id="btn-start-sound">
+        <span id="sound-on"> Start Sound </span>
+        <span id="sound-off"> Stop Sound </span>
+    </button>
+
+    <script>
+        /** @typedef {number} frequency */
+        /** @typedef {number} gain */
+        /** @typedef {{frequency: frequency, gain: gain }} oscTemplate */
+
+        const ctxAudio = new AudioContext();
+        const freqInit = 40;
+        const gain = 1;
+        let osc;
+
+
+        const btnSound = document.getElementById("btn-start-sound");
+        btnSound.addEventListener("click", evt => {
+            startOrStopAudio();
+        });
+
+        function startOrStopAudio() {
+            const soundIsOn = document.documentElement.classList.contains("sound-is-on");
+            console.log("starting or stopping sound...", { soundIsOn });
+            document.documentElement.classList.toggle("sound-is-on");
+
+
+            if (!soundIsOn) {
+                startSound();
+            } else {
+                osc.stop();
+            }
+        }
+        function startSound() {
+                    osc = ctxAudio.createOscillator();
+                    const amp = ctxAudio.createGain();
+                    const startTime = ctxAudio.currentTime;
+
+                    osc.frequency.setValueAtTime(freqInit, startTime);
+                    amp.gain.setValueAtTime(gain, startTime);
+
+                    osc.connect(amp);
+                    amp.connect(ctxAudio.destination);
+
+                    osc.start();
+                }
+
+    </script>
+</body>
