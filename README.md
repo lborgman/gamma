@@ -1,4 +1,4 @@
-# Gamma (40Hz)
+# Gamma (40Hz) - web app
 This app was inspired by an article on NPR:
 
 - [The brain makes a lot of waste. Now scientists think they know where it goes]( https://www.npr.org/sections/shots-health-news/2024/06/26/g-s1-6177/brain-waste-removal-system-amyloid-alzheimer-toxins)
