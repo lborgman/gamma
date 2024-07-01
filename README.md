@@ -38,6 +38,7 @@ The app is a web page and you can start it here: [Gamma (40hA)](https://lborgman
 <!-- html_preserve -->
 <div style="background:orange; padding:20px; border-radius:8px;">
 I have at the moment no idea wether this app does any good or harm!
-If you have any issues (psychological or technical!) you are welcome to tell me <a href="https://github.com/lborgman/gamma/issues">here</>.
+If you have any issues (psychological or technical!) you are welcome to tell me
+<a href="https://github.com/lborgman/gamma/issues">here</a>.
 </div>
 <!-- /html_preserve -->
