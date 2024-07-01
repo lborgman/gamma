@@ -48,7 +48,7 @@
             opacity: 0;
         }
 
-        .gamma-on.use-light #light-gamma {
+        .NOgamma-on.use-light #light-gamma {
             animation-name: light;
             animation-duration: 0.025s;
             NOanimation-duration: 0.25s;
@@ -109,6 +109,7 @@
         const eltLight = document.getElementById("light");
         eltLight.style.backgroundImage = `url(${bgImg})`;
 
+        const eltLightGamma = document.getElementById("light-gamma");
 
 
         const chkSound = document.getElementById("use-sound")
@@ -121,25 +122,26 @@
             }
         });
 
+        let gammaIsOn = false;
         const btnStartStop = document.getElementById("btn-start-stop");
         btnStartStop.addEventListener("click", evt => {
-            const gammaIsOn = document.documentElement.classList.contains("gamma-on");
+            gammaIsOn = !document.documentElement.classList.contains("gamma-on");
             document.documentElement.classList.toggle("gamma-on");
-            if (gammaIsOn) {
+            if (!gammaIsOn) {
                 stopSound();
             } else {
                 if (chkSound.checked) {
                     startSound();
                 }
+                animateLight();
             }
 
-            // startOrStopAudio();
         });
 
-
+        let useLight = false;
         const chkLight = document.getElementById("use-light")
         chkLight.addEventListener("change", evt => {
-            const useLight = chkLight.checked;
+            useLight = chkLight.checked;
             if (useLight) {
                 document.documentElement.classList.add("use-light");
             } else {
@@ -154,18 +156,23 @@
         function deactivateLight() {
             document.documentElement.classList.remove("light-gamma");
         }
-        function startOrStopAudio() {
-            const soundIsOn = document.documentElement.classList.contains("sound-is-on");
-            console.log("starting or stopping sound...", { soundIsOn });
-            document.documentElement.classList.toggle("sound-is-on");
-
-
-            if (!soundIsOn) {
-                startSound();
-            } else {
-                stopSound();
+        let lastDark = false;
+        function animateLight() {
+            if (!gammaIsOn) return;
+            const part = document.timeline.currentTime % 25;
+            let dark = part < 12;
+            if (!useLight) dark = true;
+            if (lastDark != dark) {
+                eltLightGamma.style.opacity = dark ? "0" : "1";
+                lastDark = dark;
             }
+            requestAnimationFrame(
+                () => {
+                    animateLight();
+                });
         }
+
+
         function stopSound() {
             osc?.stop();
             osc = undefined;
