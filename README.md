@@ -33,3 +33,11 @@ The screen in for example a modern mobile phone is refreshed 60-120 times a seco
 _Please be aware that screen flickering can be uncomfortable (and even dangerous if you have epilepsy)._
 
 The app is a web page and you can start it here: [Gamma (40hA)](https://lborgman.github.io/gamma/gamma.html)
+
+## <span style="color:red;">Please notice:</span>
+<!-- html_preserve -->
+<div style="background:orange; padding:10px; border-radius:4px;">
+I have at the moment no idea wether this app does any good or harm!
+If you have any issues (psychological or technical!) you are welcome to tell me <a href="https://github.com/lborgman/gamma/issues">here</>.
+</div>
+<!-- /html_preserve -->
