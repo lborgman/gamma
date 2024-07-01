@@ -83,8 +83,9 @@
             <span id="gamma-on"> Start </span>
             <span id="gamma-off"> Stop </span>
         </button>
-        <label>Sound: <input id="use-sound" type="checkbox" checked> </label>
-        <label>Light: <input id="use-light" type="checkbox"> </label>
+        <label>Sound<input id="use-sound" type="checkbox" checked></label>
+        <label>Light<input id="use-light" type="checkbox"></label>
+        <span>(<label>Image<input id="use-image" type="checkbox"></label>)</span>
     </div>
 
     <div id="light">
@@ -101,30 +102,57 @@
         const gain = 1;
         let osc;
 
+        let gammaIsOn = false;
+        let useLight = false;
+        let useImage = false;
 
         const arrImages = [
             "https://lh3.googleusercontent.com/pw/AP1GczPZHjrjXOnXQeennfbtWiOdRgNY_NpjI00SpKjO47LHm4lN4NauUVNKb69x8en1n90poUiZNPSN3PVG7mXSjluMB_8ZP6FIC4VzOcFTBsluyaC9UdG9YQMpczNdKHokU7cxY01DoxeT5e7EVz5RHX2ZUw=w1592-h1198-s-no-gm?authuser=0",
         ];
         let bgImg = arrImages[0];
+
+
         const eltLight = document.getElementById("light");
-        eltLight.style.backgroundImage = `url(${bgImg})`;
+        function setBackgroundImage() { eltLight.style.backgroundImage = `url(${bgImg})`; }
+        function removeBackgroundImage() { eltLight.style.backgroundImage = null; }
 
         const eltLightGamma = document.getElementById("light-gamma");
 
+        const btnStartStop = document.getElementById("btn-start-stop");
+        btnStartStop.addEventListener("click", evt => { funBtnStartStop(); });
 
-        const chkSound = document.getElementById("use-sound")
-        chkSound.addEventListener("change", evt => {
+        const chkSound = document.getElementById("use-sound");
+        chkSound.addEventListener("change", evt => { funChkSound(); });
+
+        const chkLight = document.getElementById("use-light");
+        chkLight.addEventListener("change", evt => { funChkLight(); });
+
+        const chkImage = document.getElementById("use-image");
+        chkImage.addEventListener("change", evt => { funChkImage(); });
+
+
+        function funChkImage() {
+            const checkedNow = chkImage.checked;
+            console.log({ checkedNow });
+            useImage = checkedNow;
+            if (checkedNow) {
+                setBackgroundImage();
+            } else {
+                removeBackgroundImage();
+            }
+        }
+
+        function funChkSound() {
             if (chkSound.checked) {
                 const gammaIsOn = document.documentElement.classList.contains("gamma-on");
                 if (gammaIsOn) { startSound(); }
             } else {
                 stopSound();
             }
-        });
+        }
 
-        let gammaIsOn = false;
-        const btnStartStop = document.getElementById("btn-start-stop");
-        btnStartStop.addEventListener("click", evt => {
+
+        function funBtnStartStop() {
             gammaIsOn = !document.documentElement.classList.contains("gamma-on");
             document.documentElement.classList.toggle("gamma-on");
             if (!gammaIsOn) {
@@ -135,12 +163,9 @@
                 }
                 animateLight();
             }
+        }
 
-        });
-
-        let useLight = false;
-        const chkLight = document.getElementById("use-light")
-        chkLight.addEventListener("change", evt => {
+        function funChkLight() {
             useLight = chkLight.checked;
             if (useLight) {
                 document.documentElement.classList.add("use-light");
@@ -148,7 +173,7 @@
                 document.documentElement.classList.remove("use-light");
             }
             console.log({ useLight });
-        });
+        }
 
         function activateLight() {
             document.documentElement.classList.add("light-gamma");
