@@ -70,13 +70,41 @@
             display: flex;
             gap: 20px;
         }
+
+        #main-h1 {
+            position: relative;
+        }
+
+        #info-button {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: blue;
+            color: white;
+            display: inline-flex;
+            height: 100%;
+            aspect-ratio: 1 / 1;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        #info-button a {
+            color: white;
+            text-decoration: none;
+        }
     </style>
 
 </head>
 
 <body>
 
-    <h1>Gamma (40Hz)</h1>
+    <h1 id="main-h1">
+        Gamma (40Hz)
+        <span id="info-button" title="Display information">
+            <a href="https://lborgman.github.io/gamma/">i</a>
+        </span>
+    </h1>
 
     <div id="controls">
         <button id="btn-start-stop">
