@@ -145,6 +145,39 @@
         ];
         let bgImg = arrImages[0];
 
+        const objLight = {}
+        function resetObjLight() {
+            objLight.msStart = Date.now();
+            objLight.osc = 0;
+        }
+        let justFlippedImage = false;
+        function needFlipLight() {
+            const msNow = Date.now();
+            const ms = msNow - objLight.msStart;
+            const msOsc = 1000 / 40;
+            const osc = Math.floor(ms / msOsc);
+            const diffOsc = osc - objLight.osc;
+            // console.log("diffOsc", diffOsc);
+            switch (diffOsc) {
+                case 1:
+                case 2:
+                    objLight.osc = osc;
+                    return true;
+                case 0:
+                    return false;
+                default:
+                    console.error({ diffOsc, objLight, msNow, ms, justFlippedImage });
+                    if (justFlippedImage) {
+                        justFlippedImage = false;
+                        objLight.osc = osc;
+                        return true;
+                    }
+                    useLight = false;
+                    chkLight.checked = false; // FIX-ME: move this function
+                    return false;
+            }
+        }
+
 
         const eltLight = document.getElementById("light");
         function setBackgroundImage() { eltLight.style.backgroundImage = `url(${bgImg})`; }
@@ -166,6 +199,7 @@
 
 
         function funChkImage() {
+            justFlippedImage = true;
             const checkedNow = chkImage.checked;
             console.log({ checkedNow });
             useImage = checkedNow;
@@ -195,7 +229,11 @@
                 if (chkSound.checked) {
                     startSound();
                 }
-                animateLight();
+                if (chkLight.checked) {
+                    useLight = true;
+                    resetObjLight();
+                    animateLight();
+                }
             }
         }
 
@@ -218,12 +256,17 @@
         let lastDark = false;
         function animateLight() {
             if (!gammaIsOn) return;
-            const part = document.timeline.currentTime % 25;
-            let dark = part < 12;
-            if (!useLight) dark = true;
-            if (lastDark != dark) {
-                eltLightGamma.style.opacity = dark ? "0" : "1";
-                lastDark = dark;
+            if (!useLight) return;
+            // const part = document.timeline.currentTime % 25;
+            // let dark = part < 12;
+            // if (!useLight) dark = true;
+            if (needFlipLight()) {
+                // if (lastDark != dark) {
+                // eltLightGamma.style.opacity = dark ? "0" : "1";
+                // lastDark = dark;
+                // }
+                eltLightGamma.style.opacity = lastDark ? "0" : "1";
+                lastDark = !lastDark;
             }
             requestAnimationFrame(
                 () => {
