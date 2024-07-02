@@ -138,7 +138,7 @@
         /** @typedef {number} gain */
         /** @typedef {{frequency: frequency, gain: gain }} oscTemplate */
 
-        const freqInit = 40;
+        const freq40 = 40;
         const gain = 1;
         let osc;
 
@@ -195,11 +195,11 @@
             }
             const msNow = Date.now();
             const ms = msNow - objLight.msStart;
-            const msOsc = 1000 / 40;
-            const osc = Math.floor(ms / msOsc);
-            const diffOsc = osc - objLight.osc;
+            const msOsc2 = 0.5 * 1000 / freq40;
+            const osc2 = Math.floor(ms / msOsc2);
+            const diffOsc = osc2 - objLight.osc;
             if (diffOsc == 0) { return false; }
-            objLight.osc = osc;
+            objLight.osc = osc2;
             return true;
             /*
                         // console.log("diffOsc", diffOsc);
@@ -341,7 +341,7 @@
             const amp = ctxAudio.createGain();
             const startTime = ctxAudio.currentTime;
 
-            osc.frequency.setValueAtTime(freqInit, startTime);
+            osc.frequency.setValueAtTime(freq40, startTime);
             amp.gain.setValueAtTime(gain, startTime);
 
             osc.connect(amp);
