@@ -169,7 +169,7 @@
             if (slowScreen) return;
             objLight.reqAF++;
             if (objLight.reqAF > 200) {
-                if (true || objLight.reqAF < objLight.osc) {
+                if (objLight.reqAF < objLight.osc) {
                     console.log("%cSLOW SCREEN", "color:red; font-size: 1.3em;", { objLight });
                     slowScreen = true;
                     stopLight();
@@ -300,7 +300,7 @@
                 document.documentElement.classList.remove("use-light");
                 stopLight();
             }
-            console.log({ useLight });
+            // console.log({ useLight });
         }
 
         function activateLight() {
