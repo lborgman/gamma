@@ -93,6 +93,18 @@
             color: white;
             text-decoration: none;
         }
+
+        #slow-screen {
+            position: absolute;
+            top: -30px;
+            left: 0px;
+            background-color: red;
+            color: yellow;
+            padding: 4px;
+            border-radius: 4px;
+            transition: opacity 3s;
+            display: inline-grid;
+        }
     </style>
 
 </head>
@@ -149,33 +161,67 @@
         function resetObjLight() {
             objLight.msStart = Date.now();
             objLight.osc = 0;
+            objLight.reqAF = 0;
         }
         let justFlippedImage = false;
+        let slowScreen = false;
         function needFlipLight() {
+            if (slowScreen) return;
+            objLight.reqAF++;
+            if (objLight.reqAF > 200) {
+                if (true || objLight.reqAF < objLight.osc) {
+                    console.log("%cSLOW SCREEN", "color:red; font-size: 1.3em;", { objLight });
+                    slowScreen = true;
+                    stopLight();
+                    chkLight.checked = false;
+                    chkLight.disabled = true;
+                    // chkImage.checked = false;
+                    // chkImage.disabled = true;
+                    // const lblImage = chkImage.closest("label");
+                    // lblImage.style.opacity = 0.5;
+
+                    const lblLight = chkLight.closest("label");
+                    lblLight.style.position = "relative";
+                    const eltSlow = document.createElement("div");
+                    eltSlow.id = "slow-screen";
+                    eltSlow.textContent = "Slow screen";
+                    setTimeout(() => {
+                        eltSlow.style.opacity = 0;
+                        lblLight.style.opacity = 0.5;
+                    }, 4000);
+                    lblLight.appendChild(eltSlow);
+                    return;
+                }
+            }
             const msNow = Date.now();
             const ms = msNow - objLight.msStart;
             const msOsc = 1000 / 40;
             const osc = Math.floor(ms / msOsc);
             const diffOsc = osc - objLight.osc;
-            // console.log("diffOsc", diffOsc);
-            switch (diffOsc) {
-                case 1:
-                case 2:
-                    objLight.osc = osc;
-                    return true;
-                case 0:
-                    return false;
-                default:
-                    console.error({ diffOsc, objLight, msNow, ms, justFlippedImage });
-                    if (justFlippedImage) {
-                        justFlippedImage = false;
-                        objLight.osc = osc;
-                        return true;
-                    }
-                    useLight = false;
-                    chkLight.checked = false; // FIX-ME: move this function
-                    return false;
-            }
+            if (diffOsc == 0) { return false; }
+            objLight.osc = osc;
+            return true;
+            /*
+                        // console.log("diffOsc", diffOsc);
+                        switch (diffOsc) {
+                            case 1:
+                            case 2:
+                                objLight.osc = osc;
+                                return true;
+                            case 0:
+                                return false;
+                            default:
+                                console.error({ diffOsc, objLight, msNow, ms, justFlippedImage });
+                                if (justFlippedImage) {
+                                    justFlippedImage = false;
+                                    objLight.osc = osc;
+                                    return true;
+                                }
+                                useLight = false;
+                                chkLight.checked = false; // FIX-ME: move this function
+                                return false;
+                        }
+            */
         }
 
 
@@ -225,24 +271,34 @@
             document.documentElement.classList.toggle("gamma-on");
             if (!gammaIsOn) {
                 stopSound();
+                stopLight();
             } else {
                 if (chkSound.checked) {
                     startSound();
                 }
                 if (chkLight.checked) {
-                    useLight = true;
-                    resetObjLight();
-                    animateLight();
+                    startLight();
                 }
             }
+        }
+        function startLight() {
+            useLight = true;
+            resetObjLight();
+            animateLight();
+        }
+        function stopLight() {
+            useLight = false;
+            eltLightGamma.style.opacity = "0";
         }
 
         function funChkLight() {
             useLight = chkLight.checked;
             if (useLight) {
                 document.documentElement.classList.add("use-light");
+                startLight();
             } else {
                 document.documentElement.classList.remove("use-light");
+                stopLight();
             }
             console.log({ useLight });
         }
