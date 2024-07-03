@@ -89,9 +89,36 @@
             margin-left: 20px;
         }
 
+        #dialog-settings {
+            min-width: 200px;
+        }
+
         #dialog-settings::backdrop {
             background-color: black;
             opacity: 0.6;
+        }
+
+        #dialog-settings label {
+            display: flex;
+            gap: 10px;
+            height: 32px;
+            align-items: center;
+        }
+
+        #settings-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        #inp-freq {
+            width: 3em;
+        }
+
+        #inp-color {
+            height: 100%;
+            aspect-ratio: 1 / 1;
+            border: none;
         }
 
 
@@ -156,17 +183,39 @@
     </div>
 
     <dialog id="dialog-settings">
-        <p style="background:yellow; color:red">Not ready</p>
+        <p style="background:yellow; color:red">Nearly ready...</p>
         <h2>Settings</h2>
-        <button autofocus id="btn-close-settings">Close</button>
+        <p>
+            <label>Frequency: <input id="inp-freq" type="number"></label>
+        </p>
+        <p>
+            <label>Color: <input id="inp-color" type="color"></label>
+        </p>
+        <p id="settings-buttons">
+            <button autofocus id="btn-close-settings">Close</button>
+        </p>
     </dialog>
 
-    <script>
+    <script type="module">
         /** @typedef {number} frequency */
         /** @typedef {number} gain */
         /** @typedef {{frequency: frequency, gain: gain }} oscTemplate */
 
-        const freq40 = 40;
+        const modLocalSettings = await import("./js/local-settings.js");
+        const STORING_PREFIX = "gamma-";
+        class OurLocalSetting extends modLocalSettings.LocalSetting {
+            constructor(key, defaultValue) {
+                super(STORING_PREFIX, key, defaultValue);
+            }
+        }
+
+        const settingFrequency = new OurLocalSetting("frequency", 40);
+        const settingBGcolor = new OurLocalSetting("bgcolor", "yellowgreen");
+        const settingSound = new OurLocalSetting("sound", true);
+        const settingLight = new OurLocalSetting("sound", false);
+
+        let freq40 = settingFrequency.value;
+
         const gain = 1;
         let osc;
 
@@ -254,6 +303,9 @@
 
 
         const eltLight = document.getElementById("light");
+        function setFlashColor() { eltLight.style.backgroundColor = settingBGcolor.value; }
+        setFlashColor();
+
         function setBackgroundImage() { eltLight.style.backgroundImage = `url(${bgImg})`; }
         function removeBackgroundImage() { eltLight.style.backgroundImage = null; }
 
@@ -263,9 +315,11 @@
         btnStartStop.addEventListener("click", evt => { funBtnStartStop(); });
 
         const chkSound = document.getElementById("use-sound");
+        settingSound.bindToInput(chkSound);
         chkSound.addEventListener("change", evt => { funChkSound(); });
 
         const chkLight = document.getElementById("use-light");
+        settingLight.bindToInput(chkLight);
         chkLight.addEventListener("change", evt => { funChkLight(); });
 
         const chkImage = document.getElementById("use-image");
@@ -277,9 +331,19 @@
         });
 
         function dialogSettings() {
+
+            const inpFreq = document.getElementById("inp-freq")
+            settingFrequency.bindToInput(inpFreq);
+
+            const inpColor = document.getElementById("inp-color");
+            settingBGcolor.bindToInput(inpColor);
+            inpColor.addEventListener("change", evt => { setFlashColor(); });
+
             const eltDialog = document.getElementById("dialog-settings");
             const btnClose = document.getElementById("btn-close-settings");
             btnClose.addEventListener("click", evt => { eltDialog.close(); });
+
+            // stopSound start-stop
             eltDialog.showModal();
         }
 
