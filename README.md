@@ -29,16 +29,18 @@ Tests showed that the waves increased the flow of clean cerebrospinal fluid into
 
 - **Sound:** The app makes a sound at 40Hz. 
 - **Light:** Making light that varies so fast is a bit harder.
-The screen in for example a modern mobile phone is refreshed 60-120 times a second.  I have used this to try to produce something as close as possible to 40Hz.
-_Please be aware that screen flickering can be uncomfortable (and even dangerous if you have epilepsy)._
+The screen in for example a modern mobile phone is refreshed 60-120 times a second (depending on the model).  I have used this to try to produce something as close as possible to 40Hz.
 
 The app is a web page and you can start it here: [Gamma (40hA)](https://lborgman.github.io/gamma/gamma.html)
 
 ## <span style="color:red;">Please notice:</span>
 <!-- html_preserve -->
 <div style="background:orange; padding:20px; border-radius:8px;">
+<p>
 I have at the moment no idea wether this app does any good or harm!
 If you have any issues (psychological or technical!) you are welcome to tell me
 <a href="https://github.com/lborgman/gamma/issues">here</a>.
+</p>
+<p><i>Be aware that screen flashing can be uncomfortable (and maybe even dangerous if you have photosensitive epilepsy).</i></p>
 </div>
 <!-- /html_preserve -->
