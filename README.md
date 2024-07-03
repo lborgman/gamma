@@ -12,7 +12,7 @@ So scientists have spent decades trying to answer a fundamental question, Kipnis
 _Part of the answer came in 2012 and 2013, when Iliff and Nedergaard began proposing the glymphatic system_. They showed that in sleeping animals, cerebrospinal fluid begins to flow quickly through the brain, flushing out waste.
 _But what was pushing the fluid? And how was it transporting waste across the barrier that usually separates brain tissue from the bloodstream?_
 
-Now, more than 10 years later, we seem to have part of an anser to the last question:
+Now, more than 10 years later, we seem to have part of an anwser to the last question:
 
 >**Waves that wash**
 Kipnis and his team began looking at what the brain was doing as it slept. As part of that effort, they measured the power of a slow electrical wave that appears during deep sleep in animals.
@@ -31,13 +31,13 @@ Tests showed that the waves increased the flow of clean cerebrospinal fluid into
 - **Light:** Making light that varies so fast is a bit harder.
 The screen in for example a modern mobile phone is refreshed 60-120 times a second (depending on the model).  I have used this to try to produce something as close as possible to 40Hz.
 
-The app is a web page and you can start it here: [Gamma (40hA)](https://lborgman.github.io/gamma/gamma.html)
+The app is a web page. You can start it here: [Gamma (40hA)](https://lborgman.github.io/gamma/gamma.html)
 
 ## <span style="color:red;">Please notice:</span>
 <!-- html_preserve -->
 <div style="background:orange; padding:20px; border-radius:8px;">
 <p>
-I have at the moment no idea wether this app does any good or harm!
+I have at the moment no idea whether this app does any good or harm!
 If you have any issues (psychological or technical!) you are welcome to tell me
 <a href="https://github.com/lborgman/gamma/issues">here</a>.
 </p>
