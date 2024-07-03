@@ -12,7 +12,7 @@ So scientists have spent decades trying to answer a fundamental question, Kipnis
 _Part of the answer came in 2012 and 2013, when Iliff and Nedergaard began proposing the glymphatic system_. They showed that in sleeping animals, cerebrospinal fluid begins to flow quickly through the brain, flushing out waste.
 _But what was pushing the fluid? And how was it transporting waste across the barrier that usually separates brain tissue from the bloodstream?_
 
-Now, more than 10 years later, we seem to have part of an anwser to the last question:
+Now, more than 10 years later, we seem to have part of an answer to the last question:
 
 >**Waves that wash**
 Kipnis and his team began looking at what the brain was doing as it slept. As part of that effort, they measured the power of a slow electrical wave that appears during deep sleep in animals.
