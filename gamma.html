@@ -75,6 +75,27 @@
             position: relative;
         }
 
+        #settings-button {
+            padding: 0;
+            border: none;
+            color: goldenrod;
+            background: none;
+            aspect-ratio: 1 / 1;
+            height: 1.1em;
+            font-size: 1.3em;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 20px;
+        }
+
+        #dialog-settings::backdrop {
+            background-color: black;
+            opacity: 0.6;
+        }
+
+
+
         #info-button {
             position: absolute;
             top: 0;
@@ -87,6 +108,7 @@
             justify-content: center;
             border-radius: 50%;
             border: 2px solid white;
+            scale: 0.6;
         }
 
         #info-button a {
@@ -125,13 +147,19 @@
         </button>
         <label>Sound<input id="use-sound" type="checkbox" checked></label>
         <label>Light<input id="use-light" type="checkbox"></label>
-        <span>(<label>Image<input id="use-image" type="checkbox"></label>)</span>
+        <!-- <span >(<label>Image<input id="use-image" type="checkbox"></label>)</span> -->
+        <button id="settings-button" title="Settings">⚙</button>
     </div>
 
     <div id="light">
         <div id="light-gamma"></div>
     </div>
 
+    <dialog id="dialog-settings">
+        <p style="background:yellow; color:red">Not ready</p>
+        <h2>Settings</h2>
+        <button autofocus id="btn-close-settings">Close</button>
+    </dialog>
 
     <script>
         /** @typedef {number} frequency */
@@ -241,8 +269,19 @@
         chkLight.addEventListener("change", evt => { funChkLight(); });
 
         const chkImage = document.getElementById("use-image");
-        chkImage.addEventListener("change", evt => { funChkImage(); });
+        chkImage?.addEventListener("change", evt => { funChkImage(); });
 
+        const btnSettings = document.getElementById("settings-button");
+        btnSettings.addEventListener("click", evt => {
+            dialogSettings();
+        });
+
+        function dialogSettings() {
+            const eltDialog = document.getElementById("dialog-settings");
+            const btnClose = document.getElementById("btn-close-settings");
+            btnClose.addEventListener("click", evt => { eltDialog.close(); });
+            eltDialog.showModal();
+        }
 
         function funChkImage() {
             justFlippedImage = true;
