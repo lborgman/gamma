@@ -1,8 +1,14 @@
-# Gamma (40Hz) - web app
-This app was inspired by an article on NPR:
+# GammaHz - web app
+
+<a href="https://lborgman.github.io/gamma/gamma.html"
+   style="color:black;background:lightblue;padding:6px 14px;border-radius:14px;"
+   title="Open GammaHz">Open</a>
+
+This app lets you test stimulating gamma waves in the brain.  I do not know if it works.  However the app was inspired by an article on NPR:
 
 - [The brain makes a lot of waste. Now scientists think they know where it goes]( https://www.npr.org/sections/shots-health-news/2024/06/26/g-s1-6177/brain-waste-removal-system-amyloid-alzheimer-toxins)
 
+From the article:
 > **A brief history of brainwashing**
 The new studies come more than a decade after Iliff and Dr Maiken Nedergaard, a Danish scientist, first proposed that the clear fluids in and around the brain are part of a system to wash away waste products.
 The scientists named it the glymphatic system, a nod to the body's lymphatic system, which helps fight infection, maintain fluid levels and filter out waste products and abnormal cells.
@@ -30,8 +36,6 @@ Tests showed that the waves increased the flow of clean cerebrospinal fluid into
 - **Sound:** The app makes a sound at 40Hz. 
 - **Light:** Making light that varies so fast is a bit harder.
 The screen in for example a modern mobile phone is refreshed 60-120 times a second (depending on the model).  I have used this to try to produce something as close as possible to 40Hz.
-
-The app is a web page. You can start it here: [Gamma (40hA)](https://lborgman.github.io/gamma/gamma.html)
 
 ## <span style="color:red;">Please notice:</span>
 <!-- html_preserve -->
