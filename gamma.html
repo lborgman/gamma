@@ -73,30 +73,40 @@
 
         #controls {
             display: flex;
-            gap: 20px;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         #main-h1 {
             position: relative;
-            margin-bottom: 0px;
+            NOmargin-bottom: 0px;
+        }
+
+        #btn-start-stop {
+            margin-bottom: 10px;
         }
 
         #freq-info {
-            margin-bottom: 10px;
+            NOmargin-bottom: 10px;
+        }
+
+        #span-settings-button {
+            display: inline-flex;
+            align-items: center;
         }
 
         #settings-button {
             padding: 0;
             border: none;
-            color: goldenrod;
+            color: white;
             background: none;
             aspect-ratio: 1 / 1;
-            height: 1.1em;
-            font-size: 1.3em;
+            height: 40px;
+            font-size: 35px;
             display: inline-flex;
-            justify-content: center;
             align-items: center;
-            margin-left: 20px;
+            justify-content: center;
         }
 
         #dialog-settings {
@@ -111,7 +121,8 @@
         #dialog-settings label {
             display: flex;
             gap: 10px;
-            height: 32px;
+            min-height: 32px;
+            height: 100%;
             align-items: center;
         }
 
@@ -177,17 +188,18 @@
             <a href="https://lborgman.github.io/gamma/">i</a>
         </span>
     </h1>
-    <div id="freq-info">show freq here</div>
 
+    <button id="btn-start-stop">
+        <span id="gamma-on"> Start </span> <span id="gamma-off"> Stop </span>
+    </button>
     <div id="controls">
-        <button id="btn-start-stop">
-            <span id="gamma-on"> Start </span>
-            <span id="gamma-off"> Stop </span>
-        </button>
         <label>Sound<input id="use-sound" type="checkbox" checked></label>
         <label>Light<input id="use-light" type="checkbox"></label>
         <!-- <span >(<label>Image<input id="use-image" type="checkbox"></label>)</span> -->
-        <button id="settings-button" title="Settings">⚙</button>
+        <span id="span-settings-button">
+            <span id="freq-info">show freq here</span>
+            <button id="settings-button" title="Settings">⚙</button>
+        </span>
     </div>
 
     <div id="light">
@@ -233,7 +245,7 @@
             theta: { min: 4, max: 8 },
             alpha: { min: 8, max: 13 },
             beta: { min: 13, max: 30 },
-            "low gamma": { min: 30, max: 70 },
+            "gamma": { min: 30, max: 70 },
             "high gamma": { min: 70, max: 150 },
         };
         const minFreq = 1;
@@ -251,7 +263,7 @@
             const eltFreqInfo = document.getElementById("freq-info");
             const freq = settingFrequency.value;
             const strBand = freqBandName(freq);
-            eltFreqInfo.textContent = `${freq}Hz (band: ${strBand})`;
+            eltFreqInfo.textContent = `${freq}Hz (${strBand})`;
         }
         function showFrequencyBeside() {
             const eltFreqInfo = document.getElementById("freq-info-beside");
@@ -397,6 +409,13 @@
         btnSettings.addEventListener("click", evt => {
             dialogSettings();
         });
+
+        document.addEventListener("resize", evt=> { resizeLight(); });
+        resizeLight();
+        function resizeLight() {
+            const bcr = btnSettings.getBoundingClientRect();
+            eltLight.style.top = `${bcr.top + bcr.height + 10}px`;
+        }
 
         const eltDialog = document.getElementById("dialog-settings");
         eltDialog.addEventListener("click", evt => {
