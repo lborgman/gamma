@@ -284,7 +284,7 @@
         const settingFrequency = new OurLocalSetting("frequency", 42);
         const settingBGcolor = new OurLocalSetting("bgcolor", "#9acd32"); // "yellowgreen"
         const settingSound = new OurLocalSetting("sound", true);
-        const settingLight = new OurLocalSetting("sound", false);
+        const settingLight = new OurLocalSetting("light", false);
 
         let freq40 = settingFrequency.value;
         showFrequencyAtTop();
@@ -412,6 +412,12 @@
 
         document.addEventListener("resize", evt=> { resizeLight(); });
         resizeLight();
+
+        checkCanRun();
+
+
+
+
         function resizeLight() {
             const bcr = btnSettings.getBoundingClientRect();
             eltLight.style.top = `${bcr.top + bcr.height + 10}px`;
@@ -470,7 +476,7 @@
             let canReset = false;
             const allSettings = modLocalSettings.LocalSetting.ourSettings;
             for (const key in allSettings) {
-                // console.log({ key });
+                // console.log("anything", { key });
                 const setting = allSettings[key];
                 if (setting.value != setting.defaultValue) canReset = true;
             }
@@ -481,7 +487,7 @@
             // console.log({ canReset });
             const allSettings = modLocalSettings.LocalSetting.ourSettings;
             for (const key in allSettings) {
-                // console.log({ key });
+                // console.log("reset", { key });
                 const setting = allSettings[key];
                 setting.reset();
             }
@@ -489,6 +495,7 @@
             showFrequencyAtTop();
             showFrequencyBeside();
             setCanReset();
+            btnStartStop.disabled = false;
         }
 
         function funChkImage() {
