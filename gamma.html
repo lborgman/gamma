@@ -304,6 +304,7 @@
         let justFlippedImage = false;
         let slowScreen = false;
         function needFlipLight() {
+            if (!gammaIsOn) return;
             if (slowScreen) return;
             objLight.reqAF++;
             if (objLight.reqAF > 200) {
@@ -377,11 +378,17 @@
 
         const chkSound = document.getElementById("use-sound");
         settingSound.bindToInput(chkSound);
-        chkSound.addEventListener("change", evt => { funChkSound(); });
+        chkSound.addEventListener("change", evt => {
+            funChkSound();
+            checkCanRun();
+        });
 
         const chkLight = document.getElementById("use-light");
         settingLight.bindToInput(chkLight);
-        chkLight.addEventListener("change", evt => { funChkLight(); });
+        chkLight.addEventListener("change", evt => {
+            funChkLight();
+            checkCanRun();
+        });
 
         const chkImage = document.getElementById("use-image");
         chkImage?.addEventListener("change", evt => { funChkImage(); });
@@ -444,7 +451,7 @@
             let canReset = false;
             const allSettings = modLocalSettings.LocalSetting.ourSettings;
             for (const key in allSettings) {
-                console.log({ key });
+                // console.log({ key });
                 const setting = allSettings[key];
                 if (setting.value != setting.defaultValue) canReset = true;
             }
@@ -452,16 +459,17 @@
         }
         function resetSettings() {
             const canReset = anythingToReset();
-            console.log({ canReset });
+            // console.log({ canReset });
             const allSettings = modLocalSettings.LocalSetting.ourSettings;
             for (const key in allSettings) {
-                console.log({ key });
+                // console.log({ key });
                 const setting = allSettings[key];
                 setting.reset();
             }
             setFlashColor();
             showFrequencyAtTop();
             showFrequencyBeside();
+            setCanReset();
         }
 
         function funChkImage() {
@@ -478,29 +486,45 @@
 
         function funChkSound() {
             if (chkSound.checked) {
-                const gammaIsOn = document.documentElement.classList.contains("gamma-on");
+                // const gammaIsOn = document.documentElement.classList.contains("gamma-on");
                 if (gammaIsOn) { startSound(); }
             } else {
                 stopSound();
             }
         }
 
+        function checkCanRun() {
+            const canRun = chkSound.checked || chkLight.checked;
+            btnStartStop.disabled = !canRun;
+            if (!canRun) { stopRunning(); }
+        }
 
-        function funBtnStartStop() {
-            gammaIsOn = !document.documentElement.classList.contains("gamma-on");
-            document.documentElement.classList.toggle("gamma-on");
-            if (!gammaIsOn) {
-                stopSound();
-                stopLight();
-            } else {
-                if (chkSound.checked) {
-                    startSound();
-                }
-                if (chkLight.checked) {
-                    startLight();
-                }
+        function startRunning() {
+            document.documentElement.classList.add("gamma-on");
+            gammaIsOn = true;
+            if (chkSound.checked) {
+                startSound();
+            }
+            if (chkLight.checked) {
+                startLight();
             }
         }
+        function stopRunning() {
+            document.documentElement.classList.remove("gamma-on");
+            gammaIsOn = false;
+            stopSound();
+            stopLight();
+        }
+        function funBtnStartStop() {
+            gammaIsOn = !document.documentElement.classList.contains("gamma-on");
+            // document.documentElement.classList.toggle("gamma-on");
+            if (!gammaIsOn) {
+                stopRunning();
+            } else {
+                startRunning();
+            }
+        }
+
         function startLight() {
             useLight = true;
             resetObjLight();
