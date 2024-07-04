@@ -35,10 +35,10 @@
 
         #light {
             position: fixed;
-            top: 110px;
+            top: 120px;
             bottom: 0;
             width: 100vw;
-            background-color: yellowgreen;
+            NObackground-color: yellowgreen;
             background-position: center;
             background-size: cover;
         }
@@ -78,6 +78,11 @@
 
         #main-h1 {
             position: relative;
+            margin-bottom: 0px;
+        }
+
+        #freq-info {
+            margin-bottom: 10px;
         }
 
         #settings-button {
@@ -95,7 +100,7 @@
         }
 
         #dialog-settings {
-            min-width: 200px;
+            min-width: 250px;
         }
 
         #dialog-settings::backdrop {
@@ -172,6 +177,7 @@
             <a href="https://lborgman.github.io/gamma/">i</a>
         </span>
     </h1>
+    <div id="freq-info">show freq here</div>
 
     <div id="controls">
         <button id="btn-start-stop">
@@ -189,15 +195,20 @@
     </div>
 
     <dialog id="dialog-settings">
-        <p style="background:yellow; color:red">Nearly ready...</p>
+        <p style="display:none; background:yellow; color:red">Nearly ready...</p>
         <h2>Settings</h2>
         <p>
-            <label>Frequency: <input id="inp-freq" type="number"></label>
+            <label>
+                Frequency:
+                <input id="inp-freq" type="number">
+                <span id="freq-info-beside">show frequency here</span>
+            </label>
         </p>
         <p>
             <label>Color: <input id="inp-color" type="color"></label>
         </p>
         <p id="settings-buttons">
+            <button id="btn-reset-settings">Reset</button>
             <button autofocus id="btn-close-settings">Close</button>
         </p>
     </dialog>
@@ -207,6 +218,49 @@
         /** @typedef {number} gain */
         /** @typedef {{frequency: frequency, gain: gain }} oscTemplate */
 
+        /*
+          https://en.wikipedia.org/wiki/Neural_oscillation
+          delta (1–4 Hz),
+          theta (4–8 Hz),
+          alpha (8–12 Hz),
+          beta (13–30 Hz),
+          low gamma (30–70 Hz),
+          high gamma (70–150 Hz)
+        */
+
+        const objFreq = {
+            delta: { min: 1, max: 4 },
+            theta: { min: 4, max: 8 },
+            alpha: { min: 8, max: 13 },
+            beta: { min: 13, max: 30 },
+            "low gamma": { min: 30, max: 70 },
+            "high gamma": { min: 70, max: 150 },
+        };
+        const minFreq = 1;
+        const maxFreq = 150;
+        function freqBandName(freq) {
+            if (freq < 1) return "";
+            if (freq > 150) return "";
+            for (const name in objFreq) {
+                const rec = objFreq[name];
+                if (freq >= rec.min && freq < rec.max) { return name; }
+            }
+            throw Error(`freqBandName: ${freq}`);
+        }
+        function showFrequencyAtTop() {
+            const eltFreqInfo = document.getElementById("freq-info");
+            const freq = settingFrequency.value;
+            const strBand = freqBandName(freq);
+            eltFreqInfo.textContent = `${freq}Hz (band: ${strBand})`;
+        }
+        function showFrequencyBeside() {
+            const eltFreqInfo = document.getElementById("freq-info-beside");
+            const freq = settingFrequency.value;
+            const strBand = freqBandName(freq);
+            eltFreqInfo.textContent = `${strBand}`;
+        }
+
+
         const modLocalSettings = await import("./js/local-settings.js");
         const STORING_PREFIX = "gamma-";
         class OurLocalSetting extends modLocalSettings.LocalSetting {
@@ -215,12 +269,13 @@
             }
         }
 
-        const settingFrequency = new OurLocalSetting("frequency", 40);
-        const settingBGcolor = new OurLocalSetting("bgcolor", "yellowgreen");
+        const settingFrequency = new OurLocalSetting("frequency", 42);
+        const settingBGcolor = new OurLocalSetting("bgcolor", "#9acd32"); // "yellowgreen"
         const settingSound = new OurLocalSetting("sound", true);
         const settingLight = new OurLocalSetting("sound", false);
 
         let freq40 = settingFrequency.value;
+        showFrequencyAtTop();
 
         const gain = 1;
         let osc;
@@ -336,21 +391,77 @@
             dialogSettings();
         });
 
+        const eltDialog = document.getElementById("dialog-settings");
+        eltDialog.addEventListener("click", evt => {
+            const bcr = eltDialog.getBoundingClientRect();
+            const isPointerEvent = evt instanceof PointerEvent;
+            if (isPointerEvent) {
+                // console.log("clicked dialog", bcr, evt);
+                const clientX = evt.clientX;
+                const clientY = evt.clientY;
+                let isInside = true;
+                if (clientX < bcr.x) isInside = false;
+                if (clientX > bcr.x + bcr.width) isInside = false;
+                if (clientY < bcr.y) isInside = false;
+                if (clientY > bcr.y + bcr.height) isInside = false;
+                if (isInside) { return; }
+                // console.log("on scrim");
+                eltDialog.close();
+            }
+        })
         function dialogSettings() {
-
             const inpFreq = document.getElementById("inp-freq")
             settingFrequency.bindToInput(inpFreq);
+            inpFreq.addEventListener("input", evt => {
+                setCanReset();
+                showFrequencyAtTop();
+                showFrequencyBeside();
+            });
+            showFrequencyBeside();
 
             const inpColor = document.getElementById("inp-color");
             settingBGcolor.bindToInput(inpColor);
             inpColor.addEventListener("change", evt => { setFlashColor(); });
+            inpColor.addEventListener("input", evt => setCanReset());
 
-            const eltDialog = document.getElementById("dialog-settings");
             const btnClose = document.getElementById("btn-close-settings");
             btnClose.addEventListener("click", evt => { eltDialog.close(); });
+            const btnReset = document.getElementById("btn-reset-settings");
+            btnReset.addEventListener("click", evt => { resetSettings(); });
+
+            setCanReset();
 
             // stopSound start-stop
             eltDialog.showModal();
+        }
+
+        function setCanReset() {
+            const canReset = anythingToReset();
+            const btnReset = document.getElementById("btn-reset-settings");
+            btnReset.disabled = !canReset;
+        }
+        function anythingToReset() {
+            let canReset = false;
+            const allSettings = modLocalSettings.LocalSetting.ourSettings;
+            for (const key in allSettings) {
+                console.log({ key });
+                const setting = allSettings[key];
+                if (setting.value != setting.defaultValue) canReset = true;
+            }
+            return canReset;
+        }
+        function resetSettings() {
+            const canReset = anythingToReset();
+            console.log({ canReset });
+            const allSettings = modLocalSettings.LocalSetting.ourSettings;
+            for (const key in allSettings) {
+                console.log({ key });
+                const setting = allSettings[key];
+                setting.reset();
+            }
+            setFlashColor();
+            showFrequencyAtTop();
+            showFrequencyBeside();
         }
 
         function funChkImage() {
