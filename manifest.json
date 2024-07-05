@@ -1,0 +1,13 @@
+{
+    "short_name": "GammaHz",
+    "name": "GammaHz - stimulate gamma waves",
+    "icons": [
+        {
+            "src": "./gz.svg",
+            "type": "image/svg+xml",
+            "sizes": "any"
+        }
+    ],
+    "start_url": "./gamma.html",
+    "display": "standalone"
+}
