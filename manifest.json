@@ -5,7 +5,8 @@
         {
             "src": "./gz.svg",
             "type": "image/svg+xml",
-            "sizes": "any"
+            "sizes": "any",
+            "purpose": "any"
         }
     ],
     "start_url": "./gamma.html",
