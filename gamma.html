@@ -29,6 +29,16 @@
             box-shadow: rgba(0, 0, 0, 0.2) 0px 11px 15px -7px, rgba(0, 0, 0, 0.14) 0px 24px 38px 3px, rgba(0, 0, 0, 0.12) 0px 9px 46px 8px
         }
 
+        dialog::backdrop {
+            background-color: black;
+            opacity: 0.5;
+            transition: opacity 2s;
+        }
+
+        dialog.removing::backdrop {
+            opacity: 0;
+        }
+
         button {
             border: none;
             box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 4px -1px,
@@ -86,6 +96,18 @@
             right: 0;
             background-color: black;
             opacity: 0;
+        }
+
+        #version-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: black;
+            opacity: 0.5;
+        }
+
+        .gamma-on #version-info {
+            display: none;
         }
 
         .NOgamma-on.use-light #light-gamma {
@@ -205,6 +227,11 @@
             text-decoration: none;
         }
 
+        #logo {
+            height: 30px;
+            aspect-ratio: 1 / 1;
+        }
+
         #slow-screen {
             position: absolute;
             top: -30px;
@@ -244,6 +271,10 @@
 
     <div id="light">
         <div id="light-gamma"></div>
+        <div id="version-info">
+            <img id="logo" alt="Logo" src="./gz.svg" />
+            <span id="version">version</span>
+        </div>
     </div>
 
     <dialog id="dialog-settings">
@@ -266,6 +297,17 @@
     </dialog>
 
     <script type="module">
+        const versionFun = (ver) => {
+            console.log("GOT VERSION", ver);
+            const eltVersion = document.getElementById("version");
+            version.textContent = ver;
+        }
+        const modPWA = await import("./pwa.js");
+        console.log({ modPWA });
+        modPWA.setVersionFun(versionFun);
+        modPWA.start("./sw-workbox.js");
+
+
         /** @typedef {number} frequency */
         /** @typedef {number} gain */
         /** @typedef {{frequency: frequency, gain: gain }} oscTemplate */
