@@ -507,10 +507,10 @@ export async function PWAonline() {
 
     try {
         const response = await fetch( urlHref, { method: 'HEAD' },)
-        console.log("got it");
+        console.log("got response", response);
         return response.ok
     } catch {
-        console.log("didn't get it");
+        console.log("didn't get response");
         return false
     }
 }
