@@ -243,6 +243,12 @@
             transition: opacity 3s;
             display: inline-grid;
         }
+
+        #version {
+            position: fixed;
+            top: 30px;
+            right: 70px;
+        }
     </style>
 
 </head>
@@ -273,7 +279,6 @@
         <div id="light-gamma"></div>
         <div id="version-info">
             <img id="logo" alt="Logo" src="./gz.svg" />
-            <span id="version">version</span>
         </div>
     </div>
 
@@ -296,16 +301,19 @@
         </p>
     </dialog>
 
+    <span id="version">no version</span>
+
     <script type="module">
         const versionFun = (ver) => {
             console.log("GOT VERSION", ver);
             const eltVersion = document.getElementById("version");
-            version.textContent = ver;
+            eltVersion.textContent = ver;
+            return eltVersion;
         }
         const modPWA = await import("./pwa.js");
         console.log({ modPWA });
-        modPWA.setVersionFun(versionFun);
-        modPWA.start("./sw-workbox.js");
+        modPWA.setVersionSWfun(versionFun);
+        modPWA.startSW("./sw-workbox.js");
 
 
         /** @typedef {number} frequency */

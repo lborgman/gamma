@@ -1,358 +1,437 @@
+const version = "1.2.1";
+
+/*
+    This is a boilerplate for handling a simple PWA.
+    The current version of this file should always be available at
+
+        https://github.com/lborgman/hour/blob/main/pwa.js
+
+    This pwa handler consists of 3 parts:
+    
+        1) This file, pwa.js which can be cached.
+        2) pwa-not-cached.js which is not cached. 
+        3) sw-input.js - which I use myself here.
+
+    The web browser client should just do
+
+      import("pwa.js");
+
+    This in turn imports "pwa-not-cached.js".
+    Any changes to your PWA handling should be done to this later file
+    which is not cached.
+
+
+    The user will be automatically prompted to update.
+    The styling of that dialog is done by adding a style sheet
+    before all other style sheets. So you can easily override this.
+
+
+    *** THE SERVICE WORKER FILE ***
+
+    You can handle it whichever way you want.
+    (I prefer to use Google Workbox, loaded from the internet.
+    This works together with pwa-not-cached.js which also
+    loads Workbord from the internet.)
+
+    The only important thing is that it answers a request for version:
+
+        self.addEventListener("message", async evt => {
+            let msgType;
+            if (evt.data) { msgType = evt.data.type; }
+            if (evt.data) {
+                switch (msgType) {
+                    case 'GET_VERSION':
+                        evt.ports[0].postMessage(SW_VERSION);
+                        break;
+                }
+            }
+        });
+
+    I handle it the way below.
+    When I want to create a the service worker file then I:
+    
+        1) Change the SW_VERSION at the top of sw-input.js
+        2) run "nxp workbox-cli injectManifest"
+
+    In the call to workbox-cli above the file workbox-config.js is used.
+    I have just created this with
+
+        npx workbox-cli wizard
+
+    My code have been tested with Google Chrome web browser
+    using GitHub Pages as the server.
+
+
+    I plan to use these files in different small projects.
+    If I need to change anything I will first try it out in
+    the (toy) project "Get hour number":
+
+        https://github.com/lborgman/hour
+*/
+
+
+const versions = {
+    "pwa.js": version
+}
+
+export function getVersions() {
+    return versions;
+}
+
+
 const logStyle = "background:yellowgreen; color:black; padding:2px; border-radius:2px;";
 const logStrongStyle = logStyle + " font-size:18px;";
-const styleInstallEvents = "background:red; color:blue;";
+logStrongConsole("Here is pwa.js, ver 3", import.meta.url);
 
-let funVersion;
+function logConsole(...msg) { console.log(`%cpwa.js`, logStyle, ...msg); }
+function logStrongConsole(...msg) { console.log(`%cpwa.js`, logStrongStyle, ...msg); }
+
 const idDebugSection = "pwa-debug-output";
-let secDebug;
-let swVersion;
-let instWorkbox;
-let canUpdateNow = false;
-let ourUrlSW;
+const secDebug = document.getElementById(idDebugSection);
+const keyLogToScreen = `${import.meta.url}-default-log-to-screen`;
+let mayLogToScreen = localStorage.getItem(keyLogToScreen) != null;
+if (mayLogToScreen && secDebug) { secDebug.style.display = "unset"; }
 
-
-
-logConsole("here is module pwa.js");
-
-if (document.currentScript) throw Error("import .currentScript"); // is module
-if (!import.meta.url) throw Error("!import.meta.url"); // is module
-
-export function start(urlSW) {
-    ourUrlSW = urlSW;
-    // getWorkbox();
-    addDebugSWinfo();
-    checkPWA();
-    setupForInstall();
-    setupServiceWorker();
-}
-
-function addDebugRow(txt) {
-    logConsole(`checkPWA DEBUG: ${txt}`);
-    if (secDebug == undefined) {
-        secDebug = document.getElementById(idDebugSection);
-        console.log({ secDebug });
-        secDebug = secDebug || "no secdebug"
+function addScreenDebugRow(...txt) {
+    if (!mayLogToScreen) return;
+    if (secDebug == undefined) return;
+    if (secDebug.parentElement == null) return;
+    if (secDebug.textContent.trim() == "") {
+        const btnClose = mkElt("button", undefined, "Close debug output");
+        btnClose.addEventListener("click", evt => secDebug.remove());
+        const rowClose = mkElt("div", undefined, btnClose);
+        secDebug.appendChild(rowClose);
     }
-    if (typeof secDebug == "string") return;
-    const pRow = mkElt("p", undefined, txt);
+    // logConsole(`checkPWA DEBUG: ${txt}`);
+    logConsole(`SCREEN DEBUG`, [...txt].slice(1));
+    // const pRow = mkElt("p", undefined, txt);
+    const pRow = mkElt("p", undefined, [...txt]);
     secDebug.appendChild(pRow);
 }
-function addDebugLocation(loc) {
-    const inner = mkElt("a", { href: loc }, loc);
-    addDebugRow(inner);
+
+
+
+
+const urlPWA = new URL(import.meta.url);
+const params = [...urlPWA.searchParams.keys()];
+if (params.length > 0) console.error("pwa.js should have no parameters");
+if (urlPWA.hash.length > 0) console.error("pwa.js should have no hash");
+
+
+let modNotCached;
+
+let theFunVersion;
+let theEltVersion;
+let updateTitle;
+
+const secDlgUpdateTransition = 1;
+const msDlgUpdateTransition = 1000 * secDlgUpdateTransition;
+
+let secPleaseWaitUpdating = 2000;
+let msPleaseWaitUpdating = 1000 * secPleaseWaitUpdating;
+
+class WaitUntil {
+    #evtName; #target; #prom;
+    constructor(evtName, target) {
+        this.#evtName = evtName;
+        this.#target = target || window;
+        this.#prom = simpleBlockUntilEvent(this.#target, this.#evtName);
+    }
+    promReady() { return this.#prom; }
+    tellReady() { this.#target.dispatchEvent(new Event(this.#evtName)); }
 }
 
-async function addDebugSWinfo() {
-    const regs = await navigator.serviceWorker.getRegistrations();
-    addDebugRow(`Registered service workers: ${regs.length}`);
-    const loc = location.href;
-    addDebugLocation(loc);
-    const u = new URL(loc);
-    u.pathname = "manifest.json";
-    addDebugLocation(u.href);
-    addDebugRow(`navigator.userAgentData.platform: ${navigator.userAgentData?.platform}`);
+const waitUntilNotCachedLoaded = new WaitUntil("pwa-loaded-not-cached");
+async function loadNotCached() {
+    // FIX-ME: What happens when !navigator.onLine ?
+    let isOnLine = PWAonline();
+    if (isOnLine) {
+        urlPWA.pathname = urlPWA.pathname.replace("pwa.js", "pwa-not-cached.js");
+        const ncVal = new Date().toISOString().slice(0, -5);
+        urlPWA.searchParams.set("nocache", ncVal);
+        let href = urlPWA.href;
+        try {
+            modNotCached = await import(href);
+        } catch (err) {
+            logStrongConsole(err.toString());
+        }
+        if (!modNotCached) {
+            // If not loaded get http status code
+            const f = await fetch(href);
+            console.log(f);
+            const msg = `*ERROR* http status ${f.status}, could not fetch file ${href}`;
+            console.error(msg);
+            const eltErr = document.createElement("dialog");
+            eltErr.textContent = msg;
+            eltErr.style = `
+                background-color: red;
+                color: yellow;
+                padding: 1rem;
+                font-size: 1.2rem;
+                max-width: 300px;
+            `;
+            const btnClose = document.createElement("button");
+            btnClose.textContent = "Close";
+            btnClose.addEventListener("click", evt => { eltErr.remove(); })
+            const pClose = document.createElement("p");
+            pClose.appendChild(btnClose);
+            eltErr.appendChild(pClose);
+
+            document.body.appendChild(eltErr);
+            eltErr.showModal();
+            return;
+        }
+    } else {
+        logStrongConsole("offline, can't load pwa-not-cached.js");
+    }
+    waitUntilNotCachedLoaded.tellReady();
+
+    if (modNotCached?.getSecPleaseWaitUpdating) {
+        secPleaseWaitUpdating = modNotCached.getSecPleaseWaitUpdating();
+        msPleaseWaitUpdating = 1000 * secPleaseWaitUpdating;
+    }
+
+    versions["pwa-not-cached.js"] = modNotCached.getVersion();
+    const myFuns = {
+        "mkElt": mkElt,
+        "promptForUpdate": promptForUpdate,
+        "addScreenDebugRow": addScreenDebugRow,
+    }
+    modNotCached.setPWAfuns(myFuns);
+    addCSS();
+    logStrongConsole("loadNotCached", { modNotCached });
+}
+if (PWAonline()) {
+    loadNotCached();
+} else {
+    window.addEventListener("online", evt => { loadNotCached(); }, { once: true });
 }
 
-async function checkPWA() {
-    logConsole("checkPWA");
-    // https://web.dev/learn/pwa/detection/
-    window.addEventListener('DOMContentLoaded', () => {
-        let displayMode = 'browser tab';
-        const modes = ["fullscreen", "standalone", "minimal-ui", "browser"];
-        modes.forEach(m => {
-            if (window.matchMedia(`(display-mode: ${m})`).matches) {
-                displayMode = m;
-                addDebugRow(`matched media: ${displayMode}`)
+const keyVersion = `PWA-version ${import.meta.url}`;
+function saveAppVersion(version) { localStorage.setItem(keyVersion, version); }
+function getSavedAppVersion() { return localStorage.getItem(keyVersion); }
+
+const waitUntilSetVerFun = new WaitUntil("pwa-set-version-fun");
+export async function setVersionSWfun(funVersion) {
+    theFunVersion = funVersion;
+    if (PWAonline()) {
+        const funVerSet = (version) => {
+            saveAppVersion(version);
+            if (theFunVersion) {
+                const oldEltVersion = theEltVersion;
+                theEltVersion = theFunVersion(version);
+                if (theEltVersion) {
+                    if (!oldEltVersion) {
+                        theEltVersion.title = "Click to show more about version";
+                        theEltVersion.addEventListener("click", evt => {
+                            evt.stopPropagation();
+                            const aPwsJs = mkElt("a", { href: import.meta.url, target: "_blank" }, "pwa.js");
+
+                            const dlg = mkElt("dialog", { id: "pwa-dialog-versions" }, [
+                                mkElt("h2", undefined, "PWA info and debug"),
+                                mkElt("p", undefined, [
+                                    mkElt("i", undefined, [
+                                        "This info is for developer debugging.",
+                                        " How to set up this is described in the beginning of the file ",
+                                    ]),
+                                    aPwsJs,
+                                ]),
+                            ]);
+                            dlg.appendChild(mkElt("div", undefined, `App version: ${getSavedAppVersion()}`));
+
+                            dlg.appendChild(mkElt("div", undefined, "Service Worker:"));
+                            const sw = navigator.serviceWorker.controller;
+                            const appendIndentedRow = (txt) => {
+                                const row = mkElt("div", undefined, txt);
+                                row.style.marginLeft = "10px";
+                                dlg.appendChild(row);
+                            }
+                            if (sw == null) {
+                                appendIndentedRow("null");
+                            } else {
+                                const u = sw.scriptURL;
+                                const aSW = mkElt("a", { href: u, target: "_blank" }, u);
+                                appendIndentedRow(mkElt("div", undefined, [
+                                    "scriptURL: ",
+                                    aSW
+                                ]));
+                                appendIndentedRow(mkElt("div", undefined, [
+                                    "state: ",
+                                    sw.state
+                                ]));
+                            }
+
+                            for (const k in versions) {
+                                const v = versions[k];
+                                dlg.appendChild(mkElt("div", undefined, `${k}: ${v}`));
+                            }
+
+                            const chkLogToScreen = mkElt("input", { type: "checkbox" });
+                            chkLogToScreen.checked = mayLogToScreen;
+                            chkLogToScreen.addEventListener("input", evt => {
+                                mayLogToScreen = !mayLogToScreen;
+                                if (mayLogToScreen) {
+                                    localStorage.setItem(keyLogToScreen, "may log to screen");
+                                } else {
+                                    localStorage.removeItem(keyLogToScreen);
+                                }
+                                if (secDebug) {
+                                    if (mayLogToScreen) {
+                                        secDebug.style.display = "unset";
+                                    } else {
+                                        secDebug.style.display = "none";
+                                    }
+                                }
+                            });
+                            dlg.appendChild(
+                                mkElt("p", undefined, [
+                                    mkElt("span", undefined, [
+                                        mkElt("b", undefined, "Log to screen at start: "),
+                                        chkLogToScreen
+                                    ])
+                                ]));
+
+
+                            const btnClose = mkElt("button", undefined, "Close");
+                            const divClose = mkElt("p", undefined, btnClose);
+                            dlg.appendChild(divClose);
+                            document.body.appendChild(dlg);
+                            btnClose.addEventListener("click", evt => {
+                                dlg.close();
+                                dlg.remove();
+                            });
+                            dlg.showModal();
+                            setTimeout(() => btnClose.focus(), 100);
+                        });
+                    }
+                }
             }
-        });
-        addDebugRow(`DISPLAY_MODE_LAUNCH: ${displayMode}`);
-    });
-    // https://web.dev/get-installed-related-apps/
-    const relatedApps = navigator.getInstalledRelatedApps ? await navigator.getInstalledRelatedApps() : [];
-    // console.log(`Related apps (${relatedApps.length}):`);
-    addDebugRow(`Related apps (${relatedApps.length}):`);
-    relatedApps.forEach((app) => {
-        console.log(app.id, app.platform, app.url);
-        addDebugRow(`${app.id}, ${app.platform}, ${app.url}`);
-    });
+        }
+        await waitUntilNotCachedLoaded.promReady();
+        modNotCached?.setVersionSWfun(funVerSet);
+    } else {
+        const storedVersion = getSavedAppVersion();
+        if (funVersion) { funVersion(storedVersion); }
+    }
+    waitUntilSetVerFun.tellReady();
+}
+export async function setUpdateTitle(strTitle) { updateTitle = strTitle; }
+export async function startSW(urlSW) {
+    if (!PWAonline()) { return; }
+    await waitUntilNotCachedLoaded.promReady();
+    modNotCached.startSW(urlSW);
 }
 
-async function setupServiceWorker() {
-    logConsole("setupServiceWorkder");
-    // const swRegistration = await navigator.serviceWorker.register('/service-worker.js'); //notice the file name
-    const wb = await getWorkbox();
 
-    wb.addEventListener("message",
-        // FIX-ME:
-        // errorHandlerAsyncEvent(async evt => {
-        async evt => {
-            console.log("%cwb got message", "font-size: 18px; color: red", { evt });
-            // snackbar, broadcastToClients, keepAliveCounter, messageSW
-            const msgType = evt.data.type;
-            switch (msgType) {
-                default:
-                    new Snackbar(evt.data.text);
-            }
-            // }));
-        });
 
-    const showSkipWaitingPrompt = async (event) => {
-        // Assuming the user accepted the update, set up a listener
-        // that will reload the page as soon as the previously waiting
-        // service worker has taken control.
-        wb.addEventListener('controlling', () => {
-            // At this point, reloading will ensure that the current
-            // tab is loaded under the control of the new service worker.
-            // Depending on your web app, you may want to auto-save or
-            // persist transient state before triggering the reload.
-            logStrongConsole("event controlling, doing reload");
-            // debugger;
-            window.location.reload();
-        });
+// https://dev.to/somedood/promises-and-events-some-pitfalls-and-workarounds-elp
+function simpleBlockUntilEvent(targ, evtName) {
+    return new Promise(resolve => targ.addEventListener(evtName, resolve, { passive: true, once: true }));
+}
 
-        // When `event.wasWaitingBeforeRegister` is true, a previously
-        // updated service worker is still waiting.
-        // You may want to customize the UI prompt accordingly.
-
-        // This code assumes your app has a promptForUpdate() method,
-        // which returns true if the user wants to update.
-        // Implementing this is app-specific; some examples are:
-        // https://open-ui.org/components/alert.research or
-        // https://open-ui.org/components/toast.research
-
-        canUpdateNow = true;
-
-        const updateAccepted = await promptForUpdate();
-
-        if (updateAccepted) {
-            wb.messageSkipWaiting();
-        }
-    };
-
-    // Add an event listener to detect when the registered
-    // service worker has installed but is waiting to activate.
-    wb.addEventListener('waiting', (event) => {
-        logStrongConsole("event waiting");
-        showSkipWaitingPrompt(event);
-    });
-
-    wb.addEventListener('activated', async (event) => {
-        logStrongConsole("activated");
-        const regSW = await navigator.serviceWorker.getRegistration();
-        const swLoc = regSW.active.scriptURL;
-        logStrongConsole("activated, add error event listener", { regSW });
-        regSW.active.addEventListener("error", evt => {
-            logStrongConsole("activated, error event", evt);
-        });
-        // logStrongConsole("service worker added error event listener");
-        addDebugLocation(swLoc);
-    });
-
-    // FIXME: is this supported???
-    wb.addEventListener('error', (event) => {
-        console.log("%cError from sw", "color:orange; background:black", { error });
-    });
-    wb.getSW().then(sw => {
-        sw.addEventListener("error", evt => {
-            console.log("%cError from getSW sw", "color:red; background:black", { error });
-        });
-        sw.onerror = (swerror) => {
-            console.log("%cError from getSW sw", "color:red; background:black", { swerror });
-        }
-    }).catch(err => {
-        console.log("%cError getSW addEventlistener", "color:red; background: yellow", { err });
-    });
-
-    try {
-        const swRegistration = await wb.register(); //notice the file name
-        // https://web.dev/two-way-communication-guide/
-
-        // Can't use wb.messageSW because this goes to the latest registered version, not the active
-        // const swVersion = await wb.messageSW({ type: 'GET_VERSION' });
-        //
-        // But we must check for .controller beeing null
-        // (this happens during "hard reload" and when Lighthouse tests).
-        // https://www.youtube.com/watch?v=1d3KgacJv1I
-        if (navigator.serviceWorker.controller !== null) {
-            const messageChannel = new MessageChannel();
-            messageChannel.port1.onmessage = (event) => {
-                saveVersion(event.data);
-            };
-            navigator.serviceWorker.controller.postMessage({ type: "GET_VERSION" }, [messageChannel.port2]);
-        } else {
-            addDebugRow(`Service Worker version: controller is null`);
+function addCSS() {
+    const idCSS = "css-pwa.js";
+    const eltOld = document.getElementById(idCSS);
+    if (eltOld) {
+        return;
+    }
+    const eltCSS = document.createElement("style");
+    eltCSS.id = idCSS;
+    eltCSS.textContent =
+        `
+        dialog#pwa-dialog-versions {
+            max-width: 300px;
+            background: wheat;
+            background: linear-gradient(240deg, #00819c 0%, #545b98 100%);
+            color: black;
+            border-radius: 4px;
+            font-size: 16px;
         }
 
-        return swRegistration;
-    } catch (err) {
-        console.error("Service worker registration failed", { err });
-        alert(err);
-        throw err;
-    }
-}
+        dialog#pwa-dialog-versions::backdrop {
+            background-color: black;
+            opacity: 0.5;
+        }
 
-function saveVersion(ver) {
-    swVersion = ver;
-    addDebugRow(`Service Worker version: ${swVersion}`);
-    logStrongConsole(`Service Worker version: ${swVersion}`);
-    if (funVersion) { funVersion(swVersion); }
-}
+        dialog#pwa-dialog-versions a {
+            color: darkblue;
+        }
 
-export function getDisplayMode() {
-    let displayMode = 'browser';
-    const mqStandAlone = '(display-mode: standalone)';
-    if (navigator.standalone || window.matchMedia(mqStandAlone).matches) {
-        displayMode = 'standalone';
-    }
-    return displayMode;
-}
 
-async function setupForInstall() {
-    logConsole("setupForInstall");
-    // https://web.dev/customize-install/#criteria
-    // Initialize deferredPrompt for use later to show browser install prompt.
-    let deferredPrompt;
+        dialog#pwa-dialog-update {
+            background: linear-gradient(200deg, #4b6cb7 0%, #182848 100%);
+            background: linear-gradient(240deg, #00819c 0%, #3a47d5 100%);
+            background: linear-gradient(240deg, #00819c 0%, #2b35a3 100%);
+            font-size: 1.2rem;
+            color: white;
+            border: 2px solid white;
+            border-radius: 4px;
+            max-width: 80vw;
+            opacity: 1;
+            transition: opacity ${secDlgUpdateTransition}s;
+        }
 
-    window.addEventListener('beforeinstallprompt', (evt) => {
-        logStrongConsole(`**** beforeinstallprompt' event was fired.`);
-        // Prevent the mini-infobar from appearing on mobile
-        evt.preventDefault();
-        // Stash the event so it can be triggered later.
-        deferredPrompt = evt;
+        dialog#pwa-dialog-update>h2 {
+            font-size: 1.3rem;
+            font-style: italic;
+        }
 
-        // Update UI notify the user they can install the PWA
-        // This is only nessacary if standalone!
-        // Otherwise the builtin browser install prompt can be used.
-        if (getDisplayMode() != "browser") { createEltInstallPromotion(); }
-    });
+        dialog#pwa-dialog-update>p>button {
+            font-size: 1rem;
+        }
 
-    window.addEventListener('appinstalled', () => {
-        // Hide the app-provided install promotion
-        hideInstallPromotion();
-        // Clear the deferredPrompt so it can be garbage collected
-        deferredPrompt = null;
-        // Optionally, send analytics event to indicate successful install
-        logConsole('PWA was installed');
-    });
+        dialog#pwa-dialog-update>p:last-child {
+            display: flex;
+            gap: 10px;
+        }
 
-    const dialogInstallPromotion = mkElt("dialog", { id: "div-please-install" }, [
-        mkElt("h2", undefined, "Please install this app"),
-        mkElt("p", undefined, [
-            `This will add an icon to your home screen (or desktop).
-            If relevant it also make it possible to share from other apps to this app.`,
-        ]),
-        mkElt("p", undefined, ["navigator.userAgentData.platform: ", navigator.userAgentData?.platform]),
-    ]);
-    dialogInstallPromotion.style.display = "none";
-    const btnInstall = mkElt("button", undefined, "Install");
-    btnInstall.addEventListener("click", async (evt) => {
-        deferredPrompt.prompt();
-        // Wait for the user to respond to the prompt
-        const { outcome } = await deferredPrompt.userChoice;
-        // Optionally, send analytics event with outcome of user choice
-        logConsole(`User response to the install prompt: ${outcome}`);
-        // We've used the prompt, and can't use it again, throw it away
-        deferredPrompt = null;
-    });
+        dialog#pwa-dialog-update::backdrop {
+            background-color: black;
+            opacity: 0.5;
+            /* not inherited by default */
+            transition: inherit;
+        }
 
-    const btnLater = mkElt("button", undefined, "Later");
-    btnLater.addEventListener("click", (evt) => {
-        console.log("%c*** divInstallPromotion btnLater event .remove", styleInstallEvents);
-        dialogInstallPromotion.remove();
-    });
+        dialog#pwa-dialog-update.transparent {
+            opacity: 0;
+        }
 
-    dialogInstallPromotion.appendChild(btnInstall);
-    dialogInstallPromotion.appendChild(btnLater);
-    function showInstallPromotion() {
-        console.log("%cshowInstallPromotion", styleInstallEvents);
-        document.body.appendChild(dialogInstallPromotion);
-        dialogInstallPromotion.showModal();
-        dialogInstallPromotion.style.display = null;
-    }
-    function hideInstallPromotion() {
-        console.log("%chideInstallPromotion", styleInstallEvents);
-        dialogInstallPromotion.style.display = "none";
-    }
-    async function createEltInstallPromotion() {
-        console.log("%c**** createEltInstallPromotion START", styleInstallEvents);
-        await promiseDOMready();
-        console.log("%c**** createEltInstallPromotion END, display = null", styleInstallEvents);
-        showInstallPromotion();
-    }
+        dialog#pwa-dialog-update.transparent::backdrop {
+            opacity: 0;
+        }
 
-}
+        dialog#pwa-dialog-update.updating {
+            box-shadow: 3px 5px 5px 12px rgba(255,255,127,0.75);
+        }
 
-let isPromptingForUpdate = false;
 
-let dlgPromptUpdate;
-async function promptForUpdate() {
-    logConsole("promptForUpdate 1");
-    function hidePromptUpdate() {
-        dlgPromptUpdate.style.opacity = "0";
-        setTimeout(() => {
-            dlgPromptUpdate.classList.add("removing");
-            dlgPromptUpdate.remove();
-        }, 2000);
-    }
-    const btnSkip = mkElt("button", undefined, "Skip");
-    const btnUpdate = mkElt("button", undefined, "Update");
+        #pwa-debug-output {
+            position: fixed;
+            top: 0;
+            left: 0;
+            font-size: 14px;
+            background-color: wheat;
+            color: black;
+            padding: 8px;
+            box-shadow: aquamarine 8px 8px 8px;
+        }
 
-    logConsole("promptForUpdate 2");
-    const wb = await getWorkbox();
-    logConsole("promptForUpdate 3");
-    const waitingVersion = await wb.messageSW({ type: 'GET_VERSION' });
-    logConsole("promptForUpdate 4");
-    const divErrLine = mkElt("p");
-    const divPromptButtons = mkElt("p", undefined, [btnSkip, btnUpdate]);
-    divPromptButtons.style = `
-        display: flex;
-        gap: 10px;
+        #pwa-debug-output>p {
+            margin-block-start: 0.5em;
+            margin-block-end: 0.5em;
+        }
+
+
     `;
-    dlgPromptUpdate = mkElt("dialog", { id: "prompt4update" }, [
-        mkElt("p", undefined, `Update available: version ${waitingVersion}`),
-        divErrLine,
-        divPromptButtons
-    ]);
-    dlgPromptUpdate.style = `
-        display: none;
-        background-color: yellow;
-        color: black;
-        border: 2px solid red;
-        border-radius: 4px;
-        opacity: 0;
-        transition: opacity 2s;
-    `;
-    document.body.appendChild(dlgPromptUpdate);
-    dlgPromptUpdate.showModal();
-    dlgPromptUpdate.style.display = "unset";
-    setTimeout(() => { dlgPromptUpdate.style.opacity = "1"; }, 200);
-    logConsole("promptForUpdate 5");
-    logConsole("promptForUpdate 6");
-
-    logConsole("promptForUpdate 7");
-
-    return new Promise((resolve, reject) => {
-        const evtUA = new CustomEvent("pwa-update-available");
-        window.dispatchEvent(evtUA);
-        isPromptingForUpdate = true;
-
-        btnSkip.addEventListener("click", evt => {
-            logConsole("promptForUpdate 8");
-            hidePromptUpdate();
-            setTimeout(() => { resolve(false); }, 2000);
-        });
-        btnUpdate.addEventListener("click", evt => {
-            logConsole("promptForUpdate 9");
-            dlgPromptUpdate.textContent = "Updating, please wait ...";
-            dlgPromptUpdate.style.boxShadow = "3px 5px 5px 12px rgba(255,50,0,0.75)";
-            window.onbeforeunload = null;
-            setTimeout(() => { resolve(true); }, 2000);
-        });
-    });
+    const style1 = document.querySelector("style");
+    document.head.insertBefore(eltCSS, style1);
 }
+
+
+
 
 function mkElt(type, attrib, inner) {
-    var elt = document.createElement(type);
+    const elt = document.createElement(type);
 
     function addInner(inr) {
         if (inr instanceof Element) {
@@ -364,74 +443,73 @@ function mkElt(type, attrib, inner) {
     }
     if (inner) {
         if (inner.length && typeof inner != "string") {
-            for (var i = 0; i < inner.length; i++)
+            for (let i = 0; i < inner.length; i++)
                 if (inner[i])
                     addInner(inner[i]);
         } else
             addInner(inner);
     }
-    for (var x in attrib) {
+    for (const x in attrib) {
         elt.setAttribute(x, attrib[x]);
     }
     return elt;
 }
-class Snackbar {
-    constructor(msg, color, bgColor, left, bottom, msTime) {
-        const snackbar = mkElt("aside");
-        snackbar.textContent = msg;
-        color = color || "red";
-        bgColor = bgColor || "black";
-        left = left || 20;
-        bottom = bottom || 20;
-        snackbar.style = `
-            display: flex;
-            color: ${color};
-            background-color: ${bgColor};
-            left: ${left}px;
-            bottom: ${bottom}px;
-            font-size: 16px;
-            padding: 4px;
-            border-radius: 4px;
-        `;
-        document.body.appendChild(snackbar);
-        setTimeout(() => snackbar.remove(), msTime);
+
+async function promptForUpdate(waitingVersion) {
+    const btnSkip = mkElt("button", undefined, "Skip");
+    const btnUpdate = mkElt("button", undefined, "Update");
+    const divPromptButtons = mkElt("p", undefined, [btnUpdate, btnSkip]);
+    const dlgPromptUpdate = mkElt("dialog", { id: "pwa-dialog-update", class: "pwa2-dialog" }, [
+        mkElt("h2", undefined, updateTitle),
+        mkElt("p", undefined, [
+            "Update available:",
+            mkElt("div", undefined, `version ${waitingVersion}`)
+        ]),
+        divPromptButtons
+    ]);
+    document.body.appendChild(dlgPromptUpdate);
+    dlgPromptUpdate.showModal();
+
+    return new Promise((resolve, reject) => {
+        btnSkip.addEventListener("click", evt => {
+            resolve(false);
+            dlgPromptUpdate.classList.add("transparent");
+            setTimeout(() => { dlgPromptUpdate.remove(); }, msDlgUpdateTransition);
+        });
+        btnUpdate.addEventListener("click", evt => {
+            dlgPromptUpdate.textContent = "Updating, please wait ...";
+            dlgPromptUpdate.classList.add("updating");
+            window.onbeforeunload = null;
+            resolve(true);
+            theFunVersion("Updating");
+            setTimeout(() => {
+                dlgPromptUpdate.classList.add("transparent");
+            }, msPleaseWaitUpdating);
+        });
+    });
+}
+
+
+
+// https://dev.to/maxmonteil/is-your-app-online-here-s-how-to-reliably-know-in-just-10-lines-of-js-guide-3in7
+// Saving this, looks useful...
+export async function PWAonline() {
+    if (!window.navigator.onLine) return false
+
+    // avoid CORS errors with a request to your own origin
+    const url = new URL(window.location.origin)
+
+    // random value to prevent cached responses
+    function getRandomString() { return Math.random().toString(36).substring(2, 15) }
+    url.searchParams.set('rand', getRandomString())
+
+    try {
+        const response = await fetch(
+            url.toString(),
+            { method: 'HEAD' },
+        )
+        return response.ok
+    } catch {
+        return false
     }
 }
-
-
-export async function getWorkbox() {
-    if (!instWorkbox) {
-        // https://developer.chrome.com/docs/workbox/using-workbox-window
-        const modWb = await import("https://storage.googleapis.com/workbox-cdn/releases/6.2.0/workbox-window.prod.mjs");
-        // instWorkbox = new modWb.Workbox("/sw-workbox.js");
-        instWorkbox = new modWb.Workbox(ourUrlSW);
-    }
-    if (instWorkbox) return instWorkbox
-}
-
-export async function setVersionFun(fun) { funVersion = fun; }
-
-export async function updateNow() {
-    logConsole("pwa.updateNow, calling wb.messageSkipWaiting() 1");
-    const wb = await getWorkbox();
-    logConsole("pwa.updateNow, calling wb.messageSkipWaiting() 2");
-    wb.messageSkipWaiting();
-}
-
-export function hasUpdate() {
-    // This does not work in error.js
-    // No idea why. Changing to isShowingUpdatePrompt in error.js
-    console.error("hasUpdate is obsolete");
-    return canUpdateNow;
-}
-export function isShowingUpdatePrompt() {
-    // return isPromptingForUpdate = true;
-    return !!dlgPromptUpdate?.closest(":root");
-}
-
-function logConsole(msg) { console.log(`%cpwa.js`, logStyle, msg); }
-function logStrongConsole(msg) { console.log(`%cpwa.js`, logStrongStyle, msg); }
-function warnConsole(msg) { console.warn(`%cpwa.js`, logStyle, msg); }
-
-// https://web.dev/customize-install/#detect-launch-type
-// https://web.dev/manifest-updates/
