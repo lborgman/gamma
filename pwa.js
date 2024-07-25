@@ -508,7 +508,9 @@ export async function PWAonline() {
     try {
         const response = await fetch( urlHref, { method: 'HEAD' },)
         console.log("got response", response);
-        return response.ok
+        // return response.ok
+        // Any response is ok here
+        return true;
     } catch {
         console.log("didn't get response");
         return false
