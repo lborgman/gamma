@@ -81,10 +81,21 @@ async function addDebugSWinfo() {
         const isController = reg.active === navigator.serviceWorker.controller;
         console.log({ isController });
         const eltC = isController ? mkElt("b", undefined, " controller") : "";
+
+        let state = "unknown state";
         const active = reg.active;
-        const state = active.state;
-        const url = active.scriptURL;
-        console.log({ active, state, url });
+        if (active) {
+            state = active.state;
+            const url = active.scriptURL;
+            console.log({ active, state, url });
+        }
+        const waiting = reg.waiting;
+        if (waiting) {
+            state = waiting.state;
+            const url = waiting.scriptURL;
+            console.log({ waiting, state, url });
+        }
+
         const eltA = mkElt("a", { href: url, target: "_blank" }, url);
         eltA.style.marginLeft = "10px";
         const eltRow = mkElt("span", undefined, [
