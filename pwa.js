@@ -1,4 +1,4 @@
-const version = "1.2.1";
+const version = "1.2.2";
 
 /*
     This is a boilerplate for handling a simple PWA.
@@ -502,14 +502,15 @@ export async function PWAonline() {
     // random value to prevent cached responses
     function getRandomString() { return Math.random().toString(36).substring(2, 15) }
     url.searchParams.set('rand', getRandomString())
+    const urlHref = url.href;
+    console.log("try to fetch", urlHref);
 
     try {
-        const response = await fetch(
-            url.toString(),
-            { method: 'HEAD' },
-        )
+        const response = await fetch( urlHref, { method: 'HEAD' },)
+        console.log("got it");
         return response.ok
     } catch {
+        console.log("didn't get it");
         return false
     }
 }
