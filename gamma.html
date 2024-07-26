@@ -303,6 +303,13 @@
 
     <span id="version">no version</span>
 
+    <script type="importmap">
+        {
+            "imports": {
+                "pwa.js": "./pwa.js"
+            }
+        }
+    </script>
     <script type="module">
 
 
@@ -504,7 +511,7 @@
         }
 
         const eltDialog = document.getElementById("dialog-settings");
-        eltDialog.addEventListener("click", evt => {
+        eltDialog.addEventListener("NOclick", evt => {
             const bcr = eltDialog.getBoundingClientRect();
             const isPointerEvent = evt instanceof PointerEvent;
             if (isPointerEvent) {
@@ -521,7 +528,7 @@
                 eltDialog.close();
             }
         })
-        function dialogSettings() {
+        async function dialogSettings() {
             const inpFreq = document.getElementById("inp-freq")
             settingFrequency.bindToInput(inpFreq);
             inpFreq.addEventListener("input", evt => {
@@ -544,7 +551,9 @@
             setCanReset();
 
             // stopSound start-stop
-            eltDialog.showModal();
+            // eltDialog.showModal();
+            const modPWA = await import("pwa.js");
+            modPWA.showDialogModal(eltDialog);
         }
 
         function setCanReset() {
@@ -708,7 +717,8 @@
             eltVersion.textContent = ver;
             return eltVersion;
         }
-        const modPWA = await import("./pwa.js");
+        // const modPWA = await import("./pwa.js");
+        const modPWA = await import("pwa.js");
         console.log({ modPWA });
         modPWA.setVersionSWfun(versionFun);
         modPWA.startSW("./sw-workbox.js");

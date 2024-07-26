@@ -74,8 +74,13 @@ function addDebugLocation(loc) {
     addScreenDebugRow(inner);
 }
 
-// debugger;
+
+// test TypeError
 // const eltNone= document.getElementById("NONE"); eltNone.remove();
+
+// test SyntaxError
+// function testSyntaxError() { await import("dummy"); }
+
 
 async function addDebugSWinfo() {
 
@@ -285,7 +290,7 @@ async function setupForInstall() {
     // const displayMode = getDisplayMode();
     const getDisplayMode = pwaFuns["getDisplayMode"];
     logConsole({ getDisplayMode });
-    const displayMode = getDisplayMode? getDisplayMode(): undefined;
+    const displayMode = getDisplayMode ? getDisplayMode() : undefined;
     logConsole({ displayMode });
     if (displayMode != "standalone") { logConsole("using default install!"); return; }
 

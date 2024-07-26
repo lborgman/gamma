@@ -166,7 +166,7 @@ async function loadNotCached() {
             const errMsg = err.message;
             errMsgs.push(errMsg);
             logStrongConsole(errMsg, errCls);
-            console.trace(err);
+            // console.trace(err);
             console.error(err);
         }
         if (!modNotCached) {
@@ -206,7 +206,8 @@ async function loadNotCached() {
                 dlgErr.appendChild(pClose);
 
                 document.body.appendChild(dlgErr);
-                dlgErr.showModal();
+                // dlgErr.showModal();
+                showDialogModal(dlgErr);
             }
             finishAndShowDlgErr();
             waitUntilNotCachedLoaded.tellReady();
@@ -336,7 +337,8 @@ export async function setVersionSWfun(funVersion) {
                                 dlg.close();
                                 dlg.remove();
                             });
-                            dlg.showModal();
+                            // dlg.showModal();
+                            showDialogModal(dlg);
                             setTimeout(() => btnClose.focus(), 100);
                         });
                     }
@@ -578,4 +580,29 @@ export function getDisplayMode() {
         displayMode = 'standalone';
     }
     return displayMode;
+}
+
+
+// Close when click on scrim
+export function showDialogModal(dlg) {
+    const tn = dlg.tagName;
+    if (tn != "DIALOG") {
+        throw Error(`Expeced DIALOG, got ${tn}`);
+    }
+    function isInside(bcr, cX, cY) {
+        if (cX < bcr.left) return false;
+        if (cX > bcr.right) return false;
+        if (cY < bcr.top) return false;
+        if (cY > bcr.bottom) return false;
+        return true;
+    }
+    dlg.addEventListener("click", evt => {
+        const bcr = dlg.getBoundingClientRect();
+        const cX = evt.clientX;
+        const cY = evt.clientY;
+        const inside = isInside(bcr, cX, cY);
+        // console.log("click", { inside, cX, cY, bcr });
+        if (!inside) { dlg.close(); }
+    });
+    dlg.showModal();
 }
