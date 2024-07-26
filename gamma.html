@@ -246,8 +246,8 @@
 
         #version {
             position: fixed;
-            top: 30px;
-            right: 70px;
+            top: 70px;
+            right: 10px;
         }
     </style>
 
@@ -304,16 +304,6 @@
     <span id="version">no version</span>
 
     <script type="module">
-        const versionFun = (ver) => {
-            console.log("GOT VERSION", ver);
-            const eltVersion = document.getElementById("version");
-            eltVersion.textContent = ver;
-            return eltVersion;
-        }
-        const modPWA = await import("./pwa.js");
-        console.log({ modPWA });
-        modPWA.setVersionSWfun(versionFun);
-        modPWA.startSW("./sw-workbox.js");
 
 
         /** @typedef {number} frequency */
@@ -709,6 +699,19 @@
 
             osc.start();
         }
+
+    </script>
+    <script type="module">
+        const versionFun = (ver) => {
+            console.log("GOT VERSION", ver);
+            const eltVersion = document.getElementById("version");
+            eltVersion.textContent = ver;
+            return eltVersion;
+        }
+        const modPWA = await import("./pwa.js");
+        console.log({ modPWA });
+        modPWA.setVersionSWfun(versionFun);
+        modPWA.startSW("./sw-workbox.js");
 
     </script>
 </body>

@@ -74,36 +74,64 @@ function addDebugLocation(loc) {
     addScreenDebugRow(inner);
 }
 
+// debugger;
+const eltNone= document.getElementById("NONE"); eltNone.remove();
+
 async function addDebugSWinfo() {
-    const regs = await navigator.serviceWorker.getRegistrations();
-    addScreenDebugRow(`Registered service workers: ${regs.length}`);
-    regs.forEach(reg => {
-        const isController = reg.active === navigator.serviceWorker.controller;
-        console.log({ isController });
-        const eltC = isController ? mkElt("b", undefined, " controller") : "";
 
-        let state = "unknown state";
-        const active = reg.active;
-        if (active) {
-            state = active.state;
-            const url = active.scriptURL;
-            console.log({ active, state, url });
-        }
-        const waiting = reg.waiting;
-        if (waiting) {
-            state = waiting.state;
-            const url = waiting.scriptURL;
-            console.log({ waiting, state, url });
-        }
+    // throw Error("testing...");
 
-        const eltA = mkElt("a", { href: url, target: "_blank" }, url);
-        eltA.style.marginLeft = "10px";
-        const eltRow = mkElt("span", undefined, [
-            state, eltC,
-            mkElt("div", undefined, eltA)
-        ]);
-        addScreenDebugRow(eltRow);
-    })
+    // checkRegistration();
+    async function checkRegistration() {
+        // I can't find any really good and simple documentation for this.
+        // (I avoid specs...)
+        // https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker/state
+        const regs = await navigator.serviceWorker.getRegistrations();
+        addScreenDebugRow(`Registered service workers: ${regs.length}`);
+        regs.forEach(reg => {
+            const isController = reg.active === navigator.serviceWorker.controller;
+            const regActive = reg["active"];
+            console.log({ regActive });
+            console.log({ isController });
+
+            const eltC = isController ? mkElt("b", undefined, " controller") : "";
+
+            let stateOfReg;
+            const statesOfReg = [
+                "active",
+
+                "parsed",
+                "installing",
+                "installed",
+                "activating",
+                "activated",
+                "redundant",
+            ];
+            statesOfReg.forEach(s => {
+                const r = reg[s];
+                if (r !== undefined) {
+                    if (stateOfReg) console.error(`Already state ${stateOfReg}`);
+                    stateOfReg = s;
+                    console.log(s, r);
+                    if (r) {
+                        const state = r.state;
+                        const url = r.scriptURL;
+                        console.log(r, state, url);
+                    }
+                }
+            });
+            debugger;
+
+            const eltA = mkElt("a", { href: url, target: "_blank" }, url);
+            eltA.style.marginLeft = "10px";
+            const eltRow = mkElt("span", undefined, [
+                stateOfReg, eltC,
+                mkElt("div", undefined, eltA)
+            ]);
+            addScreenDebugRow(eltRow);
+        });
+    }
+
     const loc = location.href;
     addDebugLocation(loc);
     const u = new URL(loc);
