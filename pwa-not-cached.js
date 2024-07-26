@@ -75,7 +75,7 @@ function addDebugLocation(loc) {
 }
 
 // debugger;
-const eltNone= document.getElementById("NONE"); eltNone.remove();
+// const eltNone= document.getElementById("NONE"); eltNone.remove();
 
 async function addDebugSWinfo() {
 
