@@ -30,8 +30,8 @@ const msPleaseWaitUpdating = secPleaseWaitUpdating * 1000;
 export function getSecPleaseWaitUpdating() { return secPleaseWaitUpdating; }
 
 
-let funVersion;
-let swVersion;
+// let funVersion;
+// let swVersion;
 let instWorkbox;
 let ourUrlSW;
 
@@ -45,7 +45,7 @@ if (params.length != 1 || params[0] != "nocache") {
 if (document.currentScript) throw Error("import .currentScript"); // is module
 if (!import.meta.url) throw Error("!import.meta.url"); // is module
 
-export function startSW(urlSW) {
+export async function startSW(urlSW) {
     if (doSwReset) {
         (async function () {
             console.log("in async doSwReset");
@@ -66,7 +66,7 @@ export function startSW(urlSW) {
     addDebugSWinfo();
     checkPWA();
     setupForInstall();
-    setupServiceWorker();
+    await setupServiceWorker();
 }
 
 function addDebugLocation(loc) {
@@ -249,19 +249,17 @@ async function setupServiceWorker() {
         // (this happens during "hard reload" and when Lighthouse tests).
         // https://www.youtube.com/watch?v=1d3KgacJv1I
         if (navigator.serviceWorker.controller !== null) {
-            const messageChannelName = new MessageChannel();
-            // navigator.serviceWorker.controller.postMessage({ type: "TELL_SW_NAME", SW_NAME: ourUrlSW }, [messageChannelName.port2]);
             navigator.serviceWorker.controller.postMessage({ type: "TELL_SW_NAME", SW_NAME: ourUrlSW });
 
-            const messageChannelVersion = new MessageChannel();
-            messageChannelVersion.port1.onmessage = (event) => { saveVersion(event.data); };
-            navigator.serviceWorker.controller.postMessage({ type: "GET_VERSION" }, [messageChannelVersion.port2]);
+            // const messageChannelVersion = new MessageChannel();
+            // messageChannelVersion.port1.onmessage = (event) => { saveVersion(event.data); };
+            // navigator.serviceWorker.controller.postMessage({ type: "GET_VERSION" }, [messageChannelVersion.port2]);
 
         } else {
             addScreenDebugRow(`Service Worker version: controller is null`);
         }
 
-        return swRegistration;
+        // return swRegistration;
     } catch (err) {
         console.error("Service worker registration failed", { err });
         alert(err);
@@ -269,20 +267,13 @@ async function setupServiceWorker() {
     }
 }
 
+/*
 function saveVersion(ver) {
     swVersion = ver;
     logConsole(`Service Worker version: ${swVersion}`);
     if (funVersion) { funVersion(swVersion); }
 }
-
-export function getDisplayMode() {
-    let displayMode = 'browser';
-    const mqStandAlone = '(display-mode: standalone)';
-    if (navigator.standalone || window.matchMedia(mqStandAlone).matches) {
-        displayMode = 'standalone';
-    }
-    return displayMode;
-}
+*/
 
 async function setupForInstall() {
     // FIX-ME: leave this here for now because it does not seem to be stable in Chromium.
@@ -291,7 +282,10 @@ async function setupForInstall() {
     // https://web.dev/learn/pwa/detection
 
     logStrongConsole("setupForInstall");
-    const displayMode = getDisplayMode();
+    // const displayMode = getDisplayMode();
+    const getDisplayMode = pwaFuns["getDisplayMode"];
+    logConsole({ getDisplayMode });
+    const displayMode = getDisplayMode? getDisplayMode(): undefined;
     logConsole({ displayMode });
     if (displayMode != "standalone") { logConsole("using default install!"); return; }
 
@@ -388,14 +382,12 @@ async function getWorkbox() {
     if (!instWorkbox) {
         // https://developer.chrome.com/docs/workbox/using-workbox-window
         const urlWorkboxWindow = "https://storage.googleapis.com/workbox-cdn/releases/6.2.0/workbox-window.prod.mjs";
-        const modWb = await import("https://storage.googleapis.com/workbox-cdn/releases/6.2.0/workbox-window.prod.mjs");
+        const modWb = await import(urlWorkboxWindow);
         instWorkbox = new modWb.Workbox(ourUrlSW);
     }
-    if (instWorkbox) return instWorkbox
+    return instWorkbox;
 }
 
-
-export function setVersionSWfun(fun) { funVersion = fun; }
 
 async function updateNow() {
     logConsole("pwa.updateNow, calling wb.messageSkipWaiting() 1");

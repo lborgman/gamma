@@ -227,6 +227,7 @@ async function loadNotCached() {
         "mkElt": mkElt,
         "promptForUpdate": promptForUpdate,
         "addScreenDebugRow": addScreenDebugRow,
+        "getDisplayMode": getDisplayMode,
     }
     modNotCached.setPWAfuns(myFuns);
     addCSS();
@@ -342,9 +343,11 @@ export async function setVersionSWfun(funVersion) {
                 }
             }
         }
-        funVerSet("Wait...");
-        await waitUntilNotCachedLoaded.promReady();
-        modNotCached?.setVersionSWfun(funVerSet);
+        // funVerSet("Wait...");
+        // console.trace("after Wait...");
+        funVerSet("");
+        // await waitUntilNotCachedLoaded.promReady();
+        // modNotCached?.setVersionSWfun(funVerSet);
     } else {
         const storedVersion = getSavedAppVersion();
         if (funVersion) { funVersion(storedVersion); }
@@ -566,4 +569,13 @@ export async function PWAonline() {
         console.log("didn't get response");
         return false
     }
+}
+
+export function getDisplayMode() {
+    let displayMode = 'browser';
+    const mqStandAlone = '(display-mode: standalone)';
+    if (navigator.standalone || window.matchMedia(mqStandAlone).matches) {
+        displayMode = 'standalone';
+    }
+    return displayMode;
 }
