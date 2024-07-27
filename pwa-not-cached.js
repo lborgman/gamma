@@ -47,7 +47,7 @@ if (!import.meta.url) throw Error("!import.meta.url"); // is module
 
 export async function startSW(urlSW) {
     if (doSwReset) {
-        (async function () {
+        await (async function () {
             console.log("in async doSwReset");
             if (navigator.serviceWorker.controller !== null) { }
             const regSW = await navigator.serviceWorker.getRegistrations();
@@ -63,8 +63,8 @@ export async function startSW(urlSW) {
     }
     ourUrlSW = urlSW;
     logStrongConsole("startSW", ourUrlSW);
-    addDebugSWinfo();
-    checkPWA();
+    await addDebugSWinfo();
+    await checkPWA();
     setupForInstall();
     await setupServiceWorker();
 }
@@ -78,9 +78,7 @@ function addDebugLocation(loc) {
 
 async function addDebugSWinfo() {
 
-    // throw Error("testing...");
-
-    // checkRegistration();
+    // await checkRegistration();
     async function checkRegistration() {
         // I can't find any really good and simple documentation for this.
         // (I avoid specs...)
@@ -119,7 +117,6 @@ async function addDebugSWinfo() {
                     }
                 }
             });
-            debugger;
 
             const eltA = mkElt("a", { href: url, target: "_blank" }, url);
             eltA.style.marginLeft = "10px";
@@ -165,7 +162,6 @@ async function setupServiceWorker() {
     const wb = await getWorkbox();
 
     wb.addEventListener("message",
-        // FIX-ME: errorHandlerAsyncEvent(async evt => {
         async evt => {
             logStrongConsole("got message", { evt });
             // snackbar, broadcastToClients, keepAliveCounter, messageSW
@@ -274,7 +270,7 @@ function saveVersion(ver) {
 }
 */
 
-async function setupForInstall() {
+function setupForInstall() {
     // FIX-ME: leave this here for now because it does not seem to be stable in Chromium.
     // Maybe have a close look on these?
     // https://love2dev.com/pwa/add-to-homescreen-library/

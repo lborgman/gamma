@@ -656,3 +656,10 @@ function finishAndShowDlgErr(dlgErr, moreInConsole) {
     document.body.appendChild(dlgErr);
     showDialogModal(dlgErr);
 }
+
+// Add a global error handler
+window.addEventListener("error", evt => {
+    // console.error("unhandled error:", evt.error, evt);
+    const dlgErr = startDlgErr("Unhandled error", evt.error);
+    finishAndShowDlgErr(dlgErr, true);
+});
