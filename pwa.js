@@ -238,115 +238,108 @@ function getSavedAppVersion() { return localStorage.getItem(keyVersion); }
 
 const waitUntilSetVerFun = new WaitUntil("pwa-set-version-fun");
 export async function setVersionSWfun(funVersion) {
+    if (theFunVersion) {
+        if (theFunVersion === funVersion) {
+            throw Error("setVersionSWfun called 2 times with same argument");
+        }
+        throw Error("setVersionSWfun called 2 times with different argument");
+    }
     theFunVersion = funVersion;
-    const swController = navigator.serviceWorker.controller;
-    if (PWAonline()) {
-        const funVerSet = (version) => {
-            if (/^\d+\.\d+\.\d+$/.test(version)) {
-                saveAppVersion(version);
+    const storedVersion = getSavedAppVersion() || "No ver";
+    theEltVersion = theFunVersion(storedVersion);
+    if (theEltVersion) {
+        theEltVersion.title = "Click to show more about version";
+        theEltVersion.addEventListener("click", evt => {
+            evt.stopPropagation();
+            const aPwsJs = mkElt("a", { href: import.meta.url, target: "_blank" }, "pwa.js");
+
+            const dlg = mkElt("dialog", { id: "pwa-dialog-versions" }, [
+                mkElt("h2", undefined, "PWA info and debug"),
+                mkElt("p", undefined, [
+                    mkElt("i", undefined, [
+                        "This info is for developer debugging.",
+                        " How to set up this is described in the beginning of the file ",
+                    ]),
+                    aPwsJs,
+                ]),
+            ]);
+            dlg.appendChild(mkElt("div", undefined, `App version: ${getSavedAppVersion()}`));
+
+            dlg.appendChild(mkElt("div", undefined, "Service Worker:"));
+            const appendIndentedRow = (txt) => {
+                const row = mkElt("div", undefined, txt);
+                row.style.marginLeft = "10px";
+                dlg.appendChild(row);
             }
-            if (theFunVersion) {
-                const oldEltVersion = theEltVersion;
-                theEltVersion = theFunVersion(version);
-                if (theEltVersion) {
-                    if (!oldEltVersion) {
-                        theEltVersion.title = "Click to show more about version";
-                        theEltVersion.addEventListener("click", evt => {
-                            evt.stopPropagation();
-                            const aPwsJs = mkElt("a", { href: import.meta.url, target: "_blank" }, "pwa.js");
+            const swController = navigator.serviceWorker.controller;
+            if (swController == null) {
+                appendIndentedRow("null");
+            } else {
+                const u = swController.scriptURL;
+                const aSW = mkElt("a", { href: u, target: "_blank" }, u);
+                appendIndentedRow(mkElt("div", undefined, [
+                    "scriptURL: ",
+                    aSW
+                ]));
+                appendIndentedRow(mkElt("div", undefined, [
+                    "state: ",
+                    swController.state
+                ]));
+            }
 
-                            const dlg = mkElt("dialog", { id: "pwa-dialog-versions" }, [
-                                mkElt("h2", undefined, "PWA info and debug"),
-                                mkElt("p", undefined, [
-                                    mkElt("i", undefined, [
-                                        "This info is for developer debugging.",
-                                        " How to set up this is described in the beginning of the file ",
-                                    ]),
-                                    aPwsJs,
-                                ]),
-                            ]);
-                            dlg.appendChild(mkElt("div", undefined, `App version: ${getSavedAppVersion()}`));
+            for (const k in versions) {
+                const v = versions[k];
+                dlg.appendChild(mkElt("div", undefined, `${k}: ${v}`));
+            }
 
-                            dlg.appendChild(mkElt("div", undefined, "Service Worker:"));
-                            const appendIndentedRow = (txt) => {
-                                const row = mkElt("div", undefined, txt);
-                                row.style.marginLeft = "10px";
-                                dlg.appendChild(row);
-                            }
-                            if (swController == null) {
-                                appendIndentedRow("null");
-                            } else {
-                                const u = swController.scriptURL;
-                                const aSW = mkElt("a", { href: u, target: "_blank" }, u);
-                                appendIndentedRow(mkElt("div", undefined, [
-                                    "scriptURL: ",
-                                    aSW
-                                ]));
-                                appendIndentedRow(mkElt("div", undefined, [
-                                    "state: ",
-                                    swController.state
-                                ]));
-                            }
-
-                            for (const k in versions) {
-                                const v = versions[k];
-                                dlg.appendChild(mkElt("div", undefined, `${k}: ${v}`));
-                            }
-
-                            const chkLogToScreen = mkElt("input", { type: "checkbox" });
-                            chkLogToScreen.checked = mayLogToScreen;
-                            chkLogToScreen.addEventListener("input", evt => {
-                                mayLogToScreen = !mayLogToScreen;
-                                if (mayLogToScreen) {
-                                    localStorage.setItem(keyLogToScreen, "may log to screen");
-                                } else {
-                                    localStorage.removeItem(keyLogToScreen);
-                                }
-                                if (secDebug) {
-                                    if (mayLogToScreen) {
-                                        secDebug.style.display = "unset";
-                                    } else {
-                                        secDebug.style.display = "none";
-                                    }
-                                }
-                            });
-                            dlg.appendChild(
-                                mkElt("p", undefined, [
-                                    mkElt("span", undefined, [
-                                        mkElt("b", undefined, "Log to screen at start: "),
-                                        chkLogToScreen
-                                    ])
-                                ]));
-
-
-                            const btnClose = mkElt("button", undefined, "Close");
-                            const divClose = mkElt("p", undefined, btnClose);
-                            dlg.appendChild(divClose);
-                            document.body.appendChild(dlg);
-                            btnClose.addEventListener("click", evt => {
-                                dlg.close();
-                                dlg.remove();
-                            });
-                            // dlg.showModal();
-                            showDialogModal(dlg);
-                            setTimeout(() => btnClose.focus(), 100);
-                        });
+            const chkLogToScreen = mkElt("input", { type: "checkbox" });
+            chkLogToScreen.checked = mayLogToScreen;
+            chkLogToScreen.addEventListener("input", evt => {
+                mayLogToScreen = !mayLogToScreen;
+                if (mayLogToScreen) {
+                    localStorage.setItem(keyLogToScreen, "may log to screen");
+                } else {
+                    localStorage.removeItem(keyLogToScreen);
+                }
+                if (secDebug) {
+                    if (mayLogToScreen) {
+                        secDebug.style.display = "unset";
+                    } else {
+                        secDebug.style.display = "none";
                     }
                 }
-            }
-        }
-        // funVerSet("Wait...");
-        // console.trace("after Wait...");
-        funVerSet("");
-        // await waitUntilNotCachedLoaded.promReady();
-        // modNotCached?.setVersionSWfun(funVerSet);
-    } else {
-        const storedVersion = getSavedAppVersion();
-        if (funVersion) { funVersion(storedVersion); }
+            });
+            dlg.appendChild(
+                mkElt("p", undefined, [
+                    mkElt("span", undefined, [
+                        mkElt("b", undefined, "Log to screen at start: "),
+                        chkLogToScreen
+                    ])
+                ]));
+
+
+            const btnClose = mkElt("button", undefined, "Close");
+            const divClose = mkElt("p", undefined, btnClose);
+            dlg.appendChild(divClose);
+            document.body.appendChild(dlg);
+            btnClose.addEventListener("click", evt => {
+                dlg.close();
+                dlg.remove();
+            });
+            showDialogModal(dlg);
+            setTimeout(() => btnClose.focus(), 100);
+        });
+    }
+    if (PWAonline()) {
+        // FIX-ME: what were are thinking for this???
+    }
+    function onGotVersion(version) {
+        saveAppVersion(version);
+        if (theFunVersion) { theFunVersion(version); }
     }
     const messageChannelVersion = new MessageChannel();
-    messageChannelVersion.port1.onmessage = (event) => { theFunVersion(event.data); };
-    // navigator.serviceWorker.controller.postMessage({ type: "GET_VERSION" }, [messageChannelVersion.port2]);
+    messageChannelVersion.port1.onmessage = (event) => { onGotVersion(event.data); };
+    const swController = navigator.serviceWorker.controller;
     swController.postMessage({ type: "GET_VERSION" }, [messageChannelVersion.port2]);
     waitUntilSetVerFun.tellReady();
 }
