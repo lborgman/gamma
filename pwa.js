@@ -1,10 +1,10 @@
-const version = "1.3.0";
+const version = "1.4.0";
 
 /*
     This is a boilerplate for handling a simple PWA.
     The current version of this file should always be available at
 
-        https://github.com/lborgman/hour/blob/main/pwa.js
+        https://github.com/lborgman/hour
 
     This pwa handler consists of 3 parts:
     
@@ -157,26 +157,22 @@ async function loadNotCached() {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import
         //   If moduleName refers to a module that doesn't exist, rejects with TypeError (all browsers).
         let errCls;
+        let ourErr;
         const errMsgs = [];
         try {
             modNotCached = await import(href);
         } catch (err) {
             errCls = err.constructor.name
-            errMsgs.push(mkElt("b", undefined, errCls));
-            const errMsg = err.message;
-            errMsgs.push(errMsg);
-            logStrongConsole(errMsg, errCls);
+            ourErr = err;
+            // errMsgs.push(mkElt("b", undefined, errCls));
+            // const errMsg = err.message;
+            // errMsgs.push(errMsg);
+            // logStrongConsole(errMsg, errCls);
             // console.trace(err);
             console.error(err);
         }
         if (!modNotCached) {
-            function startDlgErr(title) {
-                const dlgErr = document.createElement("dialog");
-                dlgErr.id = "dialog-err-pwa";
-                dlgErr.appendChild(mkElt("h2", undefined, title));
-                return dlgErr;
-            }
-            const dlgErr = startDlgErr("Error loading pwa-not-cached.js");
+            const dlgErr = startDlgErr("Error loading pwa-not-cached.js", ourErr);
 
             let isFetchError = false;
             if (errCls == "TypeError") {
@@ -184,32 +180,16 @@ async function loadNotCached() {
                 console.log(f);
                 if (!f.ok) {
                     isFetchError = true;
-                    errMsgs.push(`http status: ${f.status}`);
+                    errMsgs.push(`HTTP status: ${f.status}`);
                     errMsgs.push(mkElt("a", { href, target: "_blank" }, href));
                 }
-            }
-            if (!isFetchError) {
-                errMsgs.push("----");
-                errMsgs.push("(More info in console)");
             }
             errMsgs.forEach(m => {
                 dlgErr.appendChild(mkElt("div", undefined, m));
             });
             dlgErr.appendChild
 
-            function finishAndShowDlgErr() {
-                const btnClose = document.createElement("button");
-                btnClose.textContent = "Close";
-                btnClose.addEventListener("click", evt => { dlgErr.remove(); })
-                const pClose = document.createElement("p");
-                pClose.appendChild(btnClose);
-                dlgErr.appendChild(pClose);
-
-                document.body.appendChild(dlgErr);
-                // dlgErr.showModal();
-                showDialogModal(dlgErr);
-            }
-            finishAndShowDlgErr();
+            finishAndShowDlgErr(dlgErr, !isFetchError);
             waitUntilNotCachedLoaded.tellReady();
             return;
         }
@@ -225,13 +205,23 @@ async function loadNotCached() {
 
     versions["pwa-not-cached.js"] = modNotCached.getVersion();
     const myFuns = {
-        "mkElt": mkElt,
-        "promptForUpdate": promptForUpdate,
         "addScreenDebugRow": addScreenDebugRow,
         "getDisplayMode": getDisplayMode,
+        "mkElt": mkElt,
+        "promptForUpdate": promptForUpdate,
     }
-    modNotCached.setPWAfuns(myFuns);
     addCSS();
+    if (!modNotCached.setPWAfuns) {
+        const dlgErr = startDlgErr("Can't find setPWAfuns");
+        dlgErr.appendChild(mkElt("p", undefined,
+            `pwa-not-cached.js must export a function with this name.
+            It will be called with an object of named utility functions from pwa.js.
+            `
+        ));
+        finishAndShowDlgErr(dlgErr, false);
+    } else {
+        modNotCached.setPWAfuns(myFuns);
+    }
     logStrongConsole("loadNotCached", { modNotCached });
 }
 
@@ -364,7 +354,27 @@ export async function setUpdateTitle(strTitle) { updateTitle = strTitle; }
 export async function startSW(urlSW) {
     if (!PWAonline()) { return; }
     await waitUntilNotCachedLoaded.promReady();
-    modNotCached?.startSW(urlSW);
+    if (!modNotCached) return;
+    if (typeof modNotCached.startSW != "function") {
+        const dlgErr = startDlgErr("Can't find startSW");
+        const aGithub = mkElt("a", { href: "https://github.com/lborgman/hour" },
+            "https://github.com/lborgman/hour");
+        dlgErr.appendChild(mkElt("p", undefined, [
+            `pwa-not-cached.js must export a function with this name.
+            For more info about this function see the example at
+            `,
+            aGithub
+        ]));
+        finishAndShowDlgErr(dlgErr, false);
+        return;
+    }
+    try {
+        await modNotCached.startSW(urlSW);
+    } catch (err) {
+        console.log({ err });
+        const dlgErr = startDlgErr("Can't start service worker", err);
+        finishAndShowDlgErr(dlgErr, true);
+    }
 }
 
 
@@ -458,6 +468,12 @@ function addCSS() {
             background-color: darkred;
             color: yellow;
             max-width: 90vw;
+        }
+        dialog#dialog-err-pwa a {
+            display: block;
+            color: lightskyblue;
+            padding: 10px;
+            margin-top: 5px;
         }
 
 
@@ -605,4 +621,38 @@ export function showDialogModal(dlg) {
         if (!inside) { dlg.close(); }
     });
     dlg.showModal();
+}
+
+
+
+function startDlgErr(title, err) {
+    const dlgErr = document.createElement("dialog");
+    dlgErr.id = "dialog-err-pwa";
+    dlgErr.appendChild(mkElt("h2", undefined, title));
+    if (err) {
+        const errCls = err.constructor.name;
+        const errMsg = err.message;
+        dlgErr.appendChild(
+            mkElt("p", undefined, [
+                mkElt("i", undefined, mkElt("b", undefined, `${errCls}: `)),
+                mkElt("span", undefined, errMsg),
+            ]));
+    }
+    return dlgErr;
+}
+function finishAndShowDlgErr(dlgErr, moreInConsole) {
+    if (moreInConsole) {
+        dlgErr.appendChild(mkElt("div", undefined, "----"));
+        dlgErr.appendChild(mkElt("div", undefined, "(More info in console)"));
+    }
+
+    const btnClose = document.createElement("button");
+    btnClose.textContent = "Close";
+    btnClose.addEventListener("click", evt => { dlgErr.remove(); })
+    const pClose = document.createElement("p");
+    pClose.appendChild(btnClose);
+    dlgErr.appendChild(pClose);
+
+    document.body.appendChild(dlgErr);
+    showDialogModal(dlgErr);
 }

@@ -2,7 +2,7 @@
 
 const doSwReset = false;
 
-const version = "1.0.3";
+const version = "1.1.0";
 export function getVersion() { return version; }
 
 let pwaFuns;
@@ -74,12 +74,6 @@ function addDebugLocation(loc) {
     addScreenDebugRow(inner);
 }
 
-
-// test TypeError
-// const eltNone= document.getElementById("NONE"); eltNone.remove();
-
-// test SyntaxError
-// function testSyntaxError() { await import("dummy"); }
 
 
 async function addDebugSWinfo() {
@@ -401,7 +395,10 @@ async function updateNow() {
     wb.messageSkipWaiting();
 }
 
-export function setPWAfuns(objFuns) { pwaFuns = objFuns; }
+export function setPWAfuns(objFuns) {
+    pwaFuns = objFuns;
+    // pwaFuns = {}; // FIX-ME: error handling test
+}
 function mkElt(type, attrib, inner) { return pwaFuns["mkElt"](type, attrib, inner); }
 
 async function promptForUpdate() {
@@ -418,6 +415,14 @@ function addScreenDebugRow(...txt) {
     mark.style = logStyle + "margin-right:5px;";
     return pwaFuns["addScreenDebugRow"](mark, ...txt);
 }
+
+
+// test TypeError
+// const eltNone= document.getElementById("NONE"); eltNone.remove();
+
+// test SyntaxError
+// function testSyntaxError() { await import("dummy"); }
+
 
 // https://web.dev/customize-install/#detect-launch-type
 // https://web.dev/manifest-updates/
