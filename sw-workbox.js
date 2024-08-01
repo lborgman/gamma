@@ -1,10 +1,10 @@
 // https://www.npmjs.com/package/workbox-sw
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.1.0/workbox-sw.js');
-const SW_VERSION = "0.0.108";
+const SW_VERSION = "0.0.110";
 const logColors = "color: green; background: yellow;";
 console.log(`%cThis is service worker SW_VERSION=${SW_VERSION}`, logColors);
 
-workbox.precaching.precacheAndRoute([{"revision":"f5d2849179586a81ceb1725ed4c4871e","url":"gamma.html"},{"revision":"b4e8828785204d0b1919ffe5d28fdc5d","url":"gz.svg"},{"revision":"39aa17174ff116b85cb76202e50305f0","url":"js/local-settings.js"},{"revision":"70c05e83e989d82732364d5465d6b896","url":"manifest.json"},{"revision":"f706d1ac758130e93c07fe444f9f4403","url":"OLDpwa-not-cached.js"},{"revision":"26f65b031605a775943679627626d5da","url":"OLDpwa.js"},{"revision":"57b55414ae400f5d50b153e65ab30852","url":"pwa-not-cached.js"},{"revision":"9ec0b0a97d40b2088a8ea786013f1388","url":"pwa.js"},{"revision":"cf60c7f922ea3179da316172a8ef6325","url":"sw.js"},{"revision":"86e93264403127a11ae8c79e545ccfa3","url":"workbox-config.js"},{"revision":"00ec571bf8e55c81af6a8724b81a3310","url":"workbox-fd88d2de.js"}]);
+workbox.precaching.precacheAndRoute([{"revision":"f5d2849179586a81ceb1725ed4c4871e","url":"gamma.html"},{"revision":"b4e8828785204d0b1919ffe5d28fdc5d","url":"gz.svg"},{"revision":"39aa17174ff116b85cb76202e50305f0","url":"js/local-settings.js"},{"revision":"70c05e83e989d82732364d5465d6b896","url":"manifest.json"},{"revision":"f6576595dc30c41a59d1eb6446840bbc","url":"pwa-not-cached.js"},{"revision":"9ec0b0a97d40b2088a8ea786013f1388","url":"pwa.js"},{"revision":"cf60c7f922ea3179da316172a8ef6325","url":"sw.js"},{"revision":"86e93264403127a11ae8c79e545ccfa3","url":"workbox-config.js"},{"revision":"00ec571bf8e55c81af6a8724b81a3310","url":"workbox-fd88d2de.js"}]);
 
 
 
