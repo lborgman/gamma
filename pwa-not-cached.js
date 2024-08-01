@@ -1,9 +1,9 @@
 // See pwa.js for documentation
 
-const version = "1.1.2-temp";
+const version = "1.1.2-temp2";
 export function getVersion() { return version; }
 
-const doSwReset = false;
+const doSwReset = true;
 let pwaFuns;
 
 const logStyle = "background:yellowgreen; color:black; padding:2px; border-radius:2px;";
