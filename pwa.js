@@ -1,4 +1,4 @@
-const version = "1.5.1";
+const version = "1.5.11";
 
 /*
     This is a boilerplate for handling a simple PWA.
@@ -12,7 +12,7 @@ const version = "1.5.1";
         2) pwa-not-cached.js which is not cached. 
         3) sw-input.js - which I use myself here.
 
-    The web browser client should just do
+    The web browser client should do
 
       import("pwa.js");
 
@@ -20,10 +20,18 @@ const version = "1.5.1";
     Any changes to your PWA handling should be done to this later file
     which is not cached.
 
-
     The user will be automatically prompted to update.
     The styling of that dialog is done by adding a style sheet
     before all other style sheets. So you can easily override this.
+
+    A typical setup could look like this:
+
+        <script type="module">
+          const modPWA = await import("./pwa.js");
+          modPWA.startSW("./MY-sw-workbox.js");  // optional, default is "./sw-workbox.js"
+          modPWA.setUpdateTitle("My title");     // optional, default is document.title
+        </script>
+
 
 
     *** THE SERVICE WORKER FILE ***
@@ -48,18 +56,20 @@ const version = "1.5.1";
         });
 
     I handle it the way below.
-    When I want to create a the service worker file then I:
+    Before every commit:
     
         1) Change the SW_VERSION at the top of sw-input.js
         2) run "nxp workbox-cli injectManifest"
 
     In the call to workbox-cli above the file workbox-config.js is used.
-    I have just created this with
+    I have created this once with
 
         npx workbox-cli wizard
 
-    My code have been tested with Google Chrome web browser
-    using GitHub Pages as the server.
+
+
+    My code (including this file) have been tested with
+    Google Chrome web browser using GitHub Pages as the server.
 
 
     I plan to use these files in different small projects.
@@ -70,27 +80,55 @@ const version = "1.5.1";
 */
 
 
-const versions = {
-    "pwa.js": version,
-    "pwa-not-cached.js": "not available"
-}
-
-export function getVersions() {
-    return versions;
-}
-
 const logStyle = "background:yellowgreen; color:black; padding:2px; border-radius:2px;";
 const logStrongStyle = logStyle + " font-size:18px;";
-logStrongConsole("Here is pwa.js, ver 3", import.meta.url);
-
 function logConsole(...msg) { console.log(`%cpwa.js`, logStyle, ...msg); }
 function logStrongConsole(...msg) { console.log(`%cpwa.js`, logStrongStyle, ...msg); }
+
+logStrongConsole("Here is pwa.js, ver 3", import.meta.url);
+
 
 const idDebugSection = "pwa-debug-output";
 const secDebug = document.getElementById(idDebugSection);
 const keyLogToScreen = `${import.meta.url}-default-log-to-screen`;
 let mayLogToScreen = localStorage.getItem(keyLogToScreen) != null;
 if (mayLogToScreen && secDebug) { secDebug.style.display = "unset"; }
+
+
+
+const secDlgUpdateTransition = 1;
+const msDlgUpdateTransition = 1000 * secDlgUpdateTransition;
+addCSS();
+
+
+const urlPWA = new URL(import.meta.url);
+const params = [...urlPWA.searchParams.keys()];
+if (params.length > 0) throw Error("pwa.js should have no parameters");
+if (urlPWA.hash.length > 0) throw Error("pwa.js should have no hash");
+
+const keyVersion = `PWA-version ${import.meta.url}`;
+function saveAppVersion(version) { localStorage.setItem(keyVersion, version); }
+function getSavedAppVersion() { return localStorage.getItem(keyVersion); }
+
+
+
+
+
+let secPleaseWaitUpdating = 2000;
+let msPleaseWaitUpdating = 1000 * secPleaseWaitUpdating;
+
+
+
+const versions = {
+    "pwa.js": version,
+    "pwa-not-cached.js": "not available"
+}
+
+
+export function getVersions() {
+    return versions;
+}
+
 
 function addScreenDebugRow(...txt) {
     if (!mayLogToScreen) return;
@@ -102,9 +140,7 @@ function addScreenDebugRow(...txt) {
         const rowClose = mkElt("div", undefined, btnClose);
         secDebug.appendChild(rowClose);
     }
-    // logConsole(`checkPWA DEBUG: ${txt}`);
     logConsole(`SCREEN DEBUG`, [...txt].slice(1));
-    // const pRow = mkElt("p", undefined, txt);
     const pRow = mkElt("p", undefined, [...txt]);
     secDebug.appendChild(pRow);
 }
@@ -112,46 +148,73 @@ function addScreenDebugRow(...txt) {
 
 
 
-const urlPWA = new URL(import.meta.url);
-const params = [...urlPWA.searchParams.keys()];
-if (params.length > 0) console.error("pwa.js should have no parameters");
-if (urlPWA.hash.length > 0) console.error("pwa.js should have no hash");
-
-
 let modNotCached;
 
-let theFunVersion;
+
 let theEltVersion;
-let updateTitle;
+const theFunVersionDefault = (ver) => {
+    const eltVer = document.getElementById("PWA-version");
+    if (!eltVer) {
+        logStrongConsole("could not find element #PWA-version");
+        return;
+    }
+    eltVer.textContent = ver;
+    return eltVer;
+}
+let theFunVersion;
+setVersionSWfun(theFunVersionDefault)
 
-const secDlgUpdateTransition = 1;
-const msDlgUpdateTransition = 1000 * secDlgUpdateTransition;
 
-let secPleaseWaitUpdating = 2000;
-let msPleaseWaitUpdating = 1000 * secPleaseWaitUpdating;
 
-addCSS();
+let theUpdateTitle = document.title;
+let theSWurl = "./sw-workbox.js";
+
+
+
+// Override defaults (call before sw started):
+export function setUpdateTitle(strTitle) { theUpdateTitle = strTitle; }
+export function setSWurl(urlSw) { theSWurl = urlSw; }
+
+
+
 
 class WaitUntil {
-    #evtName; #target; #prom;
+    #evtName; #target; #prom; #ready = false;
     constructor(evtName, target) {
         this.#evtName = evtName;
         this.#target = target || window;
         this.#prom = simpleBlockUntilEvent(this.#target, this.#evtName);
     }
     promReady() { return this.#prom; }
-    tellReady() { this.#target.dispatchEvent(new Event(this.#evtName)); }
+    isReady() { return this.#ready; }
+    tellReady() {
+        this.#ready = true;
+        this.#target.dispatchEvent(new Event(this.#evtName));
+    }
+}
+const waitUntilNotCachedLoaded = new WaitUntil("pwa-loaded-not-cached");
+
+if (await PWAonline()) {
+    loadNotCached();
+} else {
+    window.addEventListener("online", async evt => {
+        if (!await PWAonline()) return;
+        loadNotCached();
+    });
 }
 
-const waitUntilNotCachedLoaded = new WaitUntil("pwa-loaded-not-cached");
+
+
+
 async function loadNotCached() {
-    // FIX-ME: What happens when !navigator.onLine ?
-    let isOnLine = PWAonline();
+    console.log("loadNotCached");
+    if (modNotCached) return;
+    const isOnLine = true;
     if (isOnLine) {
         urlPWA.pathname = urlPWA.pathname.replace("pwa.js", "pwa-not-cached.js");
         const ncVal = new Date().toISOString().slice(0, -5);
         urlPWA.searchParams.set("nocache", ncVal);
-        let href = urlPWA.href;
+        let hrefNotCached = urlPWA.href;
 
         // Browsers return TypeError when module is not found. Strange, but...
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import
@@ -160,15 +223,10 @@ async function loadNotCached() {
         let ourErr;
         const errMsgs = [];
         try {
-            modNotCached = await import(href);
+            modNotCached = await import(hrefNotCached);
         } catch (err) {
             errCls = err.constructor.name
             ourErr = err;
-            // errMsgs.push(mkElt("b", undefined, errCls));
-            // const errMsg = err.message;
-            // errMsgs.push(errMsg);
-            // logStrongConsole(errMsg, errCls);
-            // console.trace(err);
             console.error(err);
         }
         if (!modNotCached) {
@@ -176,12 +234,12 @@ async function loadNotCached() {
 
             let isFetchError = false;
             if (errCls == "TypeError") {
-                const f = await fetch(href);
+                const f = await fetch(hrefNotCached);
                 console.log(f);
                 if (!f.ok) {
                     isFetchError = true;
                     errMsgs.push(`HTTP status: ${f.status}`);
-                    errMsgs.push(mkElt("a", { href, target: "_blank" }, href));
+                    errMsgs.push(mkElt("a", { href: hrefNotCached, target: "_blank" }, hrefNotCached));
                 }
             }
             errMsgs.forEach(m => {
@@ -210,7 +268,6 @@ async function loadNotCached() {
         "mkElt": mkElt,
         "promptForUpdate": promptForUpdate,
     }
-    addCSS();
     if (!modNotCached.setPWAfuns) {
         const dlgErr = startDlgErr("Can't find setPWAfuns");
         dlgErr.appendChild(mkElt("p", undefined,
@@ -226,19 +283,8 @@ async function loadNotCached() {
 }
 
 
-if (PWAonline()) {
-    loadNotCached();
-} else {
-    window.addEventListener("online", evt => { loadNotCached(); }, { once: true });
-}
-
-const keyVersion = `PWA-version ${import.meta.url}`;
-function saveAppVersion(version) { localStorage.setItem(keyVersion, version); }
-function getSavedAppVersion() { return localStorage.getItem(keyVersion); }
-
-const waitUntilSetVerFun = new WaitUntil("pwa-set-version-fun");
-export async function setVersionSWfun(funVersion) {
-    if (theFunVersion) {
+export function setVersionSWfun(funVersion) {
+    if (theFunVersion && theFunVersion !== theFunVersionDefault) {
         if (theFunVersion === funVersion) {
             throw Error("setVersionSWfun called 2 times with same argument");
         }
@@ -330,9 +376,6 @@ export async function setVersionSWfun(funVersion) {
             setTimeout(() => btnClose.focus(), 100);
         });
     }
-    if (PWAonline()) {
-        // FIX-ME: what were are thinking for this???
-    }
     function onGotVersion(version) {
         saveAppVersion(version);
         if (theFunVersion) { theFunVersion(version); }
@@ -340,12 +383,15 @@ export async function setVersionSWfun(funVersion) {
     const messageChannelVersion = new MessageChannel();
     messageChannelVersion.port1.onmessage = (event) => { onGotVersion(event.data); };
     const swController = navigator.serviceWorker.controller;
-    swController.postMessage({ type: "GET_VERSION" }, [messageChannelVersion.port2]);
-    waitUntilSetVerFun.tellReady();
+    swController?.postMessage({ type: "GET_VERSION" }, [messageChannelVersion.port2]);
 }
-export async function setUpdateTitle(strTitle) { updateTitle = strTitle; }
-export async function startSW(urlSW) {
-    if (!PWAonline()) { return; }
+
+
+
+// Delay startSW so we can override defaults:
+setTimeout(startSW, 500);
+
+async function startSW() {
     await waitUntilNotCachedLoaded.promReady();
     if (!modNotCached) return;
     if (typeof modNotCached.startSW != "function") {
@@ -362,7 +408,7 @@ export async function startSW(urlSW) {
         return;
     }
     try {
-        await modNotCached.startSW(urlSW);
+        await modNotCached.startSW(theSWurl);
     } catch (err) {
         console.log({ err });
         const dlgErr = startDlgErr("Can't start service worker", err);
@@ -526,7 +572,7 @@ async function promptForUpdate(waitingVersion) {
     const btnUpdate = mkElt("button", undefined, "Update");
     const divPromptButtons = mkElt("p", undefined, [btnUpdate, btnSkip]);
     const dlgPromptUpdate = mkElt("dialog", { id: "pwa-dialog-update", class: "pwa2-dialog" }, [
-        mkElt("h2", undefined, updateTitle),
+        mkElt("h2", undefined, theUpdateTitle),
         mkElt("p", undefined, [
             "Update available:",
             mkElt("div", undefined, `version ${waitingVersion}`)
@@ -569,15 +615,14 @@ export async function PWAonline() {
     function getRandomString() { return Math.random().toString(36).substring(2, 15) }
     url.searchParams.set('rand', getRandomString())
     let urlHref = url.href;
-    console.log("try to fetch", urlHref);
+    console.trace("PWAonline: try to fetch", urlHref);
 
     try {
         const response = await fetch(urlHref, { method: 'HEAD' },)
-        // console.trace("got response", response);
-        // Any response is ok here
+        console.log(`PWAonline, (any response is actually ok here) response.ok: ${response.ok}`)
         return true;
     } catch {
-        console.log("didn't get response");
+        console.log("PWAonline: didn't get response");
         return false
     }
 }

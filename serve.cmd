@@ -1,1 +1,1 @@
-http-server . --port 8080
+http-server . --p 8082 -s

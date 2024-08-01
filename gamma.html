@@ -97,7 +97,7 @@
             opacity: 0;
         }
 
-        #version-info {
+        #logo {
             position: absolute;
             top: 0;
             left: 0;
@@ -105,7 +105,7 @@
             opacity: 0.5;
         }
 
-        .gamma-on #version-info {
+        .gamma-on #logo {
             display: none;
         }
 
@@ -237,7 +237,7 @@
             display: inline-grid;
         }
 
-        #version {
+        #PWA-version {
             position: fixed;
             top: 70px;
             right: 10px;
@@ -270,9 +270,7 @@
 
     <div id="light">
         <div id="light-gamma"></div>
-        <div id="version-info">
-            <img id="logo" alt="Logo" src="./gz.svg" />
-        </div>
+        <div id="logo"> <img id="logo" alt="Logo" src="./gz.svg" /> </div>
     </div>
 
     <dialog id="dialog-settings">
@@ -294,7 +292,7 @@
         </p>
     </dialog>
 
-    <span id="version">no version</span>
+    <span id="PWA-version">no version</span>
 
     <script type="importmap">
         {
@@ -703,18 +701,5 @@
         }
 
     </script>
-    <script type="module">
-        const versionFun = (ver) => {
-            console.log("GOT VERSION", ver);
-            const eltVersion = document.getElementById("version");
-            eltVersion.textContent = ver;
-            return eltVersion;
-        }
-        // const modPWA = await import("./pwa.js");
-        const modPWA = await import("pwa.js");
-        console.log({ modPWA });
-        modPWA.setVersionSWfun(versionFun);
-        modPWA.startSW("./sw-workbox.js");
-
-    </script>
+    <script type="module"> import("pwa.js"); </script>
 </body>
