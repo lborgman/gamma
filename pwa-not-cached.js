@@ -1,6 +1,6 @@
 // See pwa.js for documentation
 
-const version = "1.1.2-temp3";
+const version = "1.1.3";
 export function getVersion() { return version; }
 
 const doSwReset = false;
@@ -46,7 +46,7 @@ if (!import.meta.url) throw Error("!import.meta.url"); // is module
 export async function startSW(urlSW) {
     if (doSwReset) {
         await (async function () {
-            console.log("in async doSwReset");
+            logStrongConsole("in async doSwReset, please remove");
             if (navigator.serviceWorker.controller !== null) { }
             const regSW = await navigator.serviceWorker.getRegistrations();
             console.log({ regSW });
@@ -240,7 +240,7 @@ async function setupServiceWorker() {
         // (this happens during "hard reload" and when Lighthouse tests).
         // https://www.youtube.com/watch?v=1d3KgacJv1I
         if (navigator.serviceWorker.controller !== null) {
-            // navigator.serviceWorker.controller.postMessage({ type: "TELL_SW_NAME", SW_NAME: ourUrlSW });
+            navigator.serviceWorker.controller.postMessage({ type: "TELL_SW_NAME", SW_NAME: ourUrlSW });
 
             // const messageChannelVersion = new MessageChannel();
             // messageChannelVersion.port1.onmessage = (event) => { saveVersion(event.data); };
